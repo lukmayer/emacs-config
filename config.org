@@ -1,0 +1,414 @@
+#+title: Luke's Emacs configuration
+#+PROPERTY: header-args:emacs-lisp :tangle yes :results silent
+
+
+
+* Straight.el
+
+For automating package installation
+
+#+begin_src emacs-lisp
+;; Bootstrap straight.el
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+
+;; Configure use-package to use straight.el by default
+(straight-use-package 'use-package)
+(setq straight-use-package-by-default t)
+
+#+end_src
+
+
+* Basics
+Alerts, font, toolbar, bell, line numbers
+
+#+begin_src emacs-lisp
+  ;; Suppress native compilation warnings
+  (setq native-comp-async-report-warnings-errors nil)
+
+  ;; font
+  (set-face-attribute 'default nil :height 110)
+
+  ;; basic settings
+  (setq inhibit-startup-message t)
+  (tool-bar-mode -1)
+  (menu-bar-mode -1)
+  (scroll-bar-mode -1)
+  (setq visible-bell t)
+
+  ;; lines
+  (setq display-line-numbers-type t)
+  (global-display-line-numbers-mode 1)
+  (global-hl-line-mode 1)
+
+  ;; short answer
+  (setq use-short-answer t)
+
+  ;; attempting to make dashboard the default buffer instead of scratch
+  (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*")))
+
+
+#+end_src
+
+* Theme
+
+#+begin_src emacs-lisp
+;; theme
+(use-package doom-themes
+  :straight t
+  :config
+  (load-theme 'doom-bluloco-dark t))
+
+(add-hook 'after-init-hook
+          (lambda ()
+            (load-theme 'doom-bluloco-dark t)))
+
+ ;; Trusted themes
+(custom-set-variables
+ '(custom-safe-themes
+   '("9b9d7a851a8e26f294e778e02c8df25c8a3b15170e6f9fd6965ac5f2544ef2a9"
+     "22a0d47fe2e6159e2f15449fcb90bbf2fe1940b185ff143995cc604ead1ea171"
+     "b754d3a03c34cfba9ad7991380d26984ebd0761925773530e24d8dd8b6894738"
+     "4d5d11bfef87416d85673947e3ca3d3d5d985ad57b02a7bb2e32beaf785a100e"
+     "7771c8496c10162220af0ca7b7e61459cb42d18c35ce272a63461c0fc1336015"
+     "77fff78cc13a2ff41ad0a8ba2f09e8efd3c7e16be20725606c095f9a19c24d3d"
+     "f64189544da6f16bab285747d04a92bd57c7e7813d8c24c30f382f087d460a33"
+     default)))
+(custom-set-faces
+)
+
+#+end_src
+
+* Doom Modeline
+
+For the icons you have to run nerd-icons-install-fonts.
+
+#+begin_src emacs-lisp
+;; modeline
+(use-package doom-modeline
+  :straight t
+  :config
+  (doom-modeline-mode 1))
+
+#+end_src
+
+* Auto complete
+
+With ivy, counsel, and eglot
+
+#+begin_src emacs-lisp
+;; auto-complete
+(use-package ivy
+  :straight t
+  :config
+  (ivy-mode 1))
+
+(use-package counsel
+  :straight t
+  :after ivy
+  :config
+  (require 'counsel)
+  (counsel-mode 1)
+  (setq ivy-use-virtual-buffers t)
+  (setq ivy-initial-inputs-alist nil)) ;; Remove ^ from M-x
+
+
+;; eglot-booster
+(straight-use-package '(eglot-booster :type git :host github :repo "jdtsmith/eglot-booster"))
+(with-eval-after-load 'eglot
+  (require 'eglot-booster)
+  (eglot-booster-mode))
+
+#+end_src
+
+* Recent files
+
+#+begin_src emacs-lisp
+;; Recent files
+(recentf-mode 1)
+(setq recentf-max-saved-items 50)
+(global-set-key (kbd "C-x C-r") 'counsel-recentf)
+
+#+end_src
+
+
+* Search
+
+With swiper
+
+#+begin_src emacs-lisp
+;; search
+(global-set-key (kbd "C-s") #'swiper) ;; C-s
+
+#+end_src
+
+* Which-key
+
+To give an overview of shortcut options
+
+#+begin_src emacs-lisp
+;; which-key
+(use-package which-key
+  :straight t
+  :config
+  (which-key-mode 1))
+
+#+end_src
+
+* Golden-Ratio
+
+Auto-enlarging the current buffer
+This one is installed from local directory
+I got the files from Github
+
+#+begin_src emacs-lisp
+;; golden-ratio
+(use-package golden-ratio
+  :straight (:local-repo "~/.emacs.d/lisp/golden-ratio")
+  :config (golden-ratio-mode 1))
+
+#+end_src
+
+* Magit
+
+Emacs Git client + diff highlights
+
+#+begin_src emacs-lisp
+;; magit
+(use-package magit
+  :straight t
+  :bind ("C-x g" . magit-status)
+  :config
+  (setq magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+
+;; git-gutter
+(straight-use-package 'git-gutter)
+(global-git-gutter-mode +1)
+
+#+end_src
+
+* Vterm
+
+Terminal emulator in emacs
+
+#+begin_src emacs-lisp
+;; vterm
+(use-package vterm
+  :straight t
+  :config
+  (setq vterm-max-scrollback 10000)
+  :bind ("C-c t" . vterm))
+
+#+end_src
+
+* HTML, CSS
+#+begin_src emacs-lisp
+;; web-mode
+(use-package web-mode
+  :mode ("\\.html?\\'" "\\.css\\'" "\\.js\\'" "\\.jsx\\'" "\\.tsx\\'" "\\.vue\\'")
+  :config
+  (setq web-mode-markup-indent-offset 2)
+  (setq web-mode-css-indent-offset 2)
+  (setq web-mode-code-indent-offset 2))
+
+#+end_src
+
+* Quarto + languages
+
+#+begin_src emacs-lisp
+;; quarto-mode
+(use-package quarto-mode
+  :mode ("\\.qmd\\'"))
+
+;; markdown
+(use-package markdown-mode
+  :mode ("\\.md\\'" "\\.markdown\\'")
+  :config
+  (setq markdown-command "pandoc"))
+
+;; yaml
+(use-package yaml-mode
+  :mode ("\\.yml\\'" "\\.yaml\\'"))
+
+;; R
+(use-package ess
+  :defer t
+  :config
+  (setq ess-style 'RStudio)
+  (setq ess-offset-continued 'straight)
+  (setq ess-expression-offset 0))
+
+;; julia
+(use-package julia-mode
+  :mode "\\.jl\\'")
+
+#+end_src
+
+
+* Syntax checking
+
+with flycheck and tree-sitter
+
+#+begin_src emacs-lisp
+;; flycheck
+(use-package flycheck
+  :init (global-flycheck-mode)
+  :config
+  ;; Disable flycheck in modes where eglot provides diagnostics
+  (setq flycheck-disabled-checkers '(emacs-lisp-checkdoc)))
+
+(use-package treesit
+  :straight (:type built-in)
+  :when (treesit-available-p)
+  :config
+  (setq treesit-language-source-alist
+        '((python "https://github.com/tree-sitter/tree-sitter-python")
+          (javascript "https://github.com/tree-sitter/tree-sitter-javascript")
+          (css "https://github.com/tree-sitter/tree-sitter-css")
+          (html "https://github.com/tree-sitter/tree-sitter-html")
+          (yaml "https://github.com/ikatyang/tree-sitter-yaml")
+          (julia "https://github.com/tree-sitter/tree-sitter-julia")))
+
+  (setq major-mode-remap-alist
+        '((python-mode . python-ts-mode)
+          (js-mode . js-ts-mode)
+          (css-mode . css-ts-mode)
+          (html-mode . html-ts-mode)
+          (yaml-mode . yaml-ts-mode))))
+
+(defun install-treesit-grammars ()
+  "Install tree-sitter grammars for configured languages."
+  (interactive)
+  (dolist (lang '(python javascript css html yaml julia))
+    (unless (treesit-language-available-p lang)
+      (treesit-install-language-grammar lang))))
+
+
+#+end_src
+
+
+* To-Do comment highlighting
+
+#+begin_src emacs-lisp
+;; hl-todo
+(straight-use-package 'hl-todo)
+(global-hl-todo-mode)
+
+#+end_src
+
+
+* Dashboard
+
+#+begin_src emacs-lisp
+;; dashboard
+(straight-use-package 'dashboard)
+(require 'dashboard)
+(dashboard-setup-startup-hook)
+(setq dashboard-startup-banner 'logo)
+(setq dashboard-set-heading-icons t)
+(setq dashboard-set-file-icons t)
+(setq dashboard-set-navigator t)
+
+#+end_src
+
+* Nix
+
+#+begin_src emacs-lisp 
+;; nix
+(use-package nix-mode
+  :mode "\\.nix\\'")
+
+#+end_src
+
+* Recent commands
+
+#+begin_src emacs-lisp
+;; amx - command frequency tracking for M-x
+(use-package amx
+  :straight t
+  :config
+  (amx-mode 1))
+
+#+end_src
+
+
+* Centering text for readability
+
+#+begin_src emacs-lisp
+;; Center text in the buffer
+(use-package visual-fill-column
+  :straight t
+  :ensure t
+  :hook (visual-line-mode . visual-fill-column-mode)
+  :custom
+  (visual-fill-column-width 80)
+  (visual-fill-column-center-text t))
+
+#+end_src
+
+
+* Evil mode
+
+#+begin_src emacs-lisp
+;; vim-mode
+(straight-use-package 'evil)
+(straight-use-package 'evil-collection)
+
+(require 'evil)
+(evil-mode 1)
+
+(straight-use-package 'evil-collection)
+(when (require 'evil-collection nil t)
+  (evil-collection-init))
+
+#+end_src
+
+* Auto-save
+
+#+begin_src emacs-lisp
+    
+(use-package auto-save-visited-mode
+    :config
+    (setq auto-save-visited-interval 10)  ;; Save every 10 seconds
+    (auto-save-visited-mode 1))
+
+#+end_src
+
+
+* Projectile
+
+#+begin_src emacs-lisp
+(use-package projectile
+  :straight t
+  :config
+  (projectile-mode +1))
+
+#+end_src
+
+
+
+TODO: learn file management in dired, including sudo-open
+TODO: org: notes, tangle
+TODO: default search engine on eww
+
+
+TODO quarto - shortcuts for initializing REPL, execution and navigation
+TODO: quarto - fix code chunks?
+
+
+
+
+
+
+
+
