@@ -1,6 +1,7 @@
 #+title: Luke's Emacs configuration
 #+PROPERTY: header-args:emacs-lisp :tangle yes :results silent
-
+#+auto_tangle: t
+#+tangle: config.el
 
 
 * Straight.el
@@ -12,7 +13,7 @@ For automating package installation
 (defvar bootstrap-version)
 (let ((bootstrap-file
        (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
+      (bootstrap-version 6))
   (unless (file-exists-p bootstrap-file)
     (with-current-buffer
         (url-retrieve-synchronously
@@ -65,27 +66,42 @@ Alerts, font, toolbar, bell, line numbers
 #+begin_src emacs-lisp
 ;; theme
 (use-package doom-themes
-  :straight t
-  :config
-  (load-theme 'doom-bluloco-dark t))
+    :straight t
+    :config
+    (load-theme 'doom-bluloco-dark t))
 
 (add-hook 'after-init-hook
-          (lambda ()
-            (load-theme 'doom-bluloco-dark t)))
+            (lambda ()
+              (load-theme 'doom-bluloco-dark t)))
 
- ;; Trusted themes
+   ;; Trusted themes
 (custom-set-variables
- '(custom-safe-themes
-   '("9b9d7a851a8e26f294e778e02c8df25c8a3b15170e6f9fd6965ac5f2544ef2a9"
-     "22a0d47fe2e6159e2f15449fcb90bbf2fe1940b185ff143995cc604ead1ea171"
-     "b754d3a03c34cfba9ad7991380d26984ebd0761925773530e24d8dd8b6894738"
-     "4d5d11bfef87416d85673947e3ca3d3d5d985ad57b02a7bb2e32beaf785a100e"
-     "7771c8496c10162220af0ca7b7e61459cb42d18c35ce272a63461c0fc1336015"
-     "77fff78cc13a2ff41ad0a8ba2f09e8efd3c7e16be20725606c095f9a19c24d3d"
-     "f64189544da6f16bab285747d04a92bd57c7e7813d8c24c30f382f087d460a33"
-     default)))
-(custom-set-faces
+   '(custom-safe-themes
+     '("9b9d7a851a8e26f294e778e02c8df25c8a3b15170e6f9fd6965ac5f2544ef2a9"
+       "22a0d47fe2e6159e2f15449fcb90bbf2fe1940b185ff143995cc604ead1ea171"
+       "b754d3a03c34cfba9ad7991380d26984ebd0761925773530e24d8dd8b6894738"
+       "4d5d11bfef87416d85673947e3ca3d3d5d985ad57b02a7bb2e32beaf785a100e"
+       "7771c8496c10162220af0ca7b7e61459cb42d18c35ce272a63461c0fc1336015"
+       "77fff78cc13a2ff41ad0a8ba2f09e8efd3c7e16be20725606c095f9a19c24d3d"
+       "f64189544da6f16bab285747d04a92bd57c7e7813d8c24c30f382f087d460a33"
+       default)))
+  (custom-set-faces
 )
+
+
+(defun light-theme ()
+  "Load doom-bluloco-light theme."
+  (interactive)
+  (when (car custom-enabled-themes)
+    (disable-theme (car custom-enabled-themes)))
+  (load-theme 'doom-bluloco-light t))
+
+(defun dark-theme ()
+  "Load doom-bluloco-dark theme."
+  (interactive)
+  (when (car custom-enabled-themes)
+    (disable-theme (car custom-enabled-themes)))
+  (load-theme 'doom-bluloco-dark t))
 
 #+end_src
 
@@ -104,31 +120,41 @@ For the icons you have to run nerd-icons-install-fonts.
 
 * Auto complete
 
-With ivy, counsel, and eglot
+With ivy, counsel, company, and eglot
 
 #+begin_src emacs-lisp
 ;; auto-complete
 (use-package ivy
-  :straight t
-  :config
-  (ivy-mode 1))
+    :straight t
+    :config
+    (ivy-mode 1))
 
 (use-package counsel
-  :straight t
-  :after ivy
-  :config
-  (require 'counsel)
-  (counsel-mode 1)
-  (setq ivy-use-virtual-buffers t)
-  (setq ivy-initial-inputs-alist nil)) ;; Remove ^ from M-x
+    :straight t
+    :after ivy
+    :config
+    (require 'counsel)
+    (counsel-mode 1)
+    (setq ivy-use-virtual-buffers t)
+    (setq ivy-initial-inputs-alist nil)) ;; Remove ^ from M-x
 
 
 ;; eglot-booster
 (straight-use-package '(eglot-booster :type git :host github :repo "jdtsmith/eglot-booster"))
 (with-eval-after-load 'eglot
-  (require 'eglot-booster)
-  (eglot-booster-mode))
+    (require 'eglot-booster)
+    (eglot-booster-mode))
 
+
+(use-package company
+:straight t
+:demand t                     
+:custom
+(company-idle-delay 0.2)      
+(company-minimum-prefix-length 1)
+:hook
+(after-init . global-company-mode))   
+   
 #+end_src
 
 * Recent files
@@ -202,13 +228,8 @@ Emacs Git client + diff highlights
 Terminal emulator in emacs
 
 #+begin_src emacs-lisp
-;; vterm
-(use-package vterm
-  :straight t
-  :config
-  (setq vterm-max-scrollback 10000)
-  :bind ("C-c t" . vterm))
-
+  ;; vterm
+  (require 'vterm)
 #+end_src
 
 * HTML, CSS
@@ -226,33 +247,63 @@ Terminal emulator in emacs
 * Quarto + languages
 
 #+begin_src emacs-lisp
-;; quarto-mode
-(use-package quarto-mode
-  :mode ("\\.qmd\\'"))
+  ;; quarto-mode
+  (use-package quarto-mode
+    :ensure t)
 
-;; markdown
-(use-package markdown-mode
-  :mode ("\\.md\\'" "\\.markdown\\'")
-  :config
-  (setq markdown-command "pandoc"))
+  ;; poly-mode
+  (straight-use-package 'polymode)
+ 
+  ;; markdown
+  (use-package markdown-mode
+    :mode ("\\.md\\'" "\\.markdown\\'")
+    :config
+    (setq markdown-command "pandoc"))
 
-;; yaml
-(use-package yaml-mode
-  :mode ("\\.yml\\'" "\\.yaml\\'"))
+  ;; yaml
+  (use-package yaml-mode
+    :mode ("\\.yml\\'" "\\.yaml\\'"))
 
-;; R
-(use-package ess
-  :defer t
-  :config
-  (setq ess-style 'RStudio)
-  (setq ess-offset-continued 'straight)
-  (setq ess-expression-offset 0))
+  ;; R
+  (use-package ess
+    :defer t
+    :config
+    (setq ess-style 'RStudio)
+    (setq ess-offset-continued 'straight)
+    (setq ess-expression-offset 0))
 
-;; julia
-(use-package julia-mode
-  :mode "\\.jl\\'")
+  ;; julia
+  (use-package julia-mode
+    :mode "\\.jl\\'")
 
 #+end_src
+
+
+** Setting up company to work with Quarto
+
+#+begin_src emacs-lisp
+(defun my/pm-enable-company ()
+    "Turn on company in sub-buffers produced by Polymode."
+    (company-mode 1))
+
+(with-eval-after-load 'polymode
+    (add-hook 'poly-after-switch-buffer-hook #'my/pm-enable-company))
+
+(with-eval-after-load 'company
+    (add-to-list 'company-backends 'company-ess-backend))
+
+#+end_src
+
+** Using my own code (better-quarto.el)
+
+#+begin_src emacs-lisp
+
+(use-package better-quarto
+  :straight nil          ;; local file, don’t fetch from MELPA
+  :load-path "~/.emacs.d/elisp/better-quarto"
+  :after general)
+#+end_src
+
 
 
 * Syntax checking
@@ -358,31 +409,27 @@ with flycheck and tree-sitter
 
 
 * Evil mode
+General used for SPC leader key
 
 #+begin_src emacs-lisp
-;; vim-mode
-(straight-use-package 'evil)
-(straight-use-package 'evil-collection)
+    ;; vim-mode
+    (straight-use-package 'evil)
+    (straight-use-package 'evil-collection)
 
-(require 'evil)
-(evil-mode 1)
+    (require 'evil)
+    (evil-mode 1)
 
-(straight-use-package 'evil-collection)
-(when (require 'evil-collection nil t)
-  (evil-collection-init))
+    (straight-use-package 'evil-collection)
+    (when (require 'evil-collection nil t)
+      (evil-collection-init))
+
+(use-package general
+  :straight t     
+  :demand t)      
+
 
 #+end_src
 
-* Auto-save
-
-#+begin_src emacs-lisp
-    
-(use-package auto-save-visited-mode
-    :config
-    (setq auto-save-visited-interval 10)  ;; Save every 10 seconds
-    (auto-save-visited-mode 1))
-
-#+end_src
 
 
 * Projectile
@@ -395,15 +442,80 @@ with flycheck and tree-sitter
 
 #+end_src
 
+* Keybindings
+
+#+begin_src emacs-lisp
+  (global-set-key (kbd "C-<tab>") 'other-window)
+
+#+end_src
+
+* Org
+#+begin_src emacs-lisp
+  (require 'ob-R)
+
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((shell . t)
+     (python . t)
+     (R . t)
+     (julia . t)
+     (emacs-lisp . t)))
+
+  (require 'org-tempo)
+  (setq org-confirm-babel-evaluate nil)
+
+  (setq org-babel-default-header-args:python
+        '((:results . "output")))
+
+  (setq org-babel-default-header-args:R
+        '((:results . "output")))
+
+  (setq org-babel-default-header-args:julia
+        '((:results . "output")))
+
+  (setq org-babel-default-header-args:shell
+        '((:results . "output")))
+  
+  (straight-use-package 'org-auto-tangle)
+
+#+end_src
+
+* Elfeed
+
+#+begin_src emacs-lisp
+(use-package elfeed
+  :straight t)
+
+(use-package elfeed-tube
+  :straight t
+  :after elfeed
+  :demand t
+  :config
+  (elfeed-tube-setup))
+
+(load-file (expand-file-name "feeds.el" user-emacs-directory))
+
+(setq elfeed-show-entry-switch #'elfeed-display-buffer)
+
+(defun elfeed-display-buffer (buf &optional act)
+  (pop-to-buffer buf)
+  (set-window-text-height (get-buffer-window) (round (* 0.7 (frame-height)))))
+
+(setq elfeed-search-filter "@1-month-ago +unread")
+
+(setq elfeed-search-parse-filter-expiry-words t)
+
+(defun my-elfeed-show-setup ()
+  (setq-local elfeed-show-entry-switch #'elfeed-display-buffer))
+
+(add-hook 'elfeed-show-mode-hook #'my-elfeed-show-setup)
+ 
+#+end_src
 
 
-TODO: learn file management in dired, including sudo-open
-TODO: org: notes, tangle
-TODO: default search engine on eww
 
 
-TODO quarto - shortcuts for initializing REPL, execution and navigation
-TODO: quarto - fix code chunks?
+
 
 
 
