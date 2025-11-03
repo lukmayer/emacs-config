@@ -1,10 +1,9 @@
 #+title: Luke's Emacs configuration
-#+PROPERTY: header-args:emacs-lisp :tangle yes :results silent
+#+PROPERTY: header-args:emacs-lisp :tangle config.el :results silent
 #+auto_tangle: t
-#+tangle: config.el
 
-
-* Straight.el
+* Core
+** Straight.el
 
 For automating package installation
 
@@ -30,7 +29,7 @@ For automating package installation
 #+end_src
 
 
-* Basics
+** Basics
 Alerts, font, toolbar, bell, line numbers
 
 #+begin_src emacs-lisp
@@ -61,18 +60,20 @@ Alerts, font, toolbar, bell, line numbers
 
 #+end_src
 
-* Theme
+
+* Appearance
+** Theme
 
 #+begin_src emacs-lisp
 ;; theme
 (use-package doom-themes
     :straight t
     :config
-    (load-theme 'doom-bluloco-dark t))
+    (load-theme 'doom-henna t))
 
 (add-hook 'after-init-hook
             (lambda ()
-              (load-theme 'doom-bluloco-dark t)))
+              (load-theme 'doom-henna t)))
 
    ;; Trusted themes
 (custom-set-variables
@@ -90,22 +91,22 @@ Alerts, font, toolbar, bell, line numbers
 
 
 (defun light-theme ()
-  "Load doom-bluloco-light theme."
+  "Load light theme."
   (interactive)
   (when (car custom-enabled-themes)
     (disable-theme (car custom-enabled-themes)))
   (load-theme 'doom-bluloco-light t))
 
 (defun dark-theme ()
-  "Load doom-bluloco-dark theme."
+  "Load dark theme."
   (interactive)
   (when (car custom-enabled-themes)
     (disable-theme (car custom-enabled-themes)))
-  (load-theme 'doom-bluloco-dark t))
+  (load-theme 'doom-henna t))
 
 #+end_src
 
-* Doom Modeline
+** Doom Modeline
 
 For the icons you have to run nerd-icons-install-fonts.
 
@@ -118,7 +119,180 @@ For the icons you have to run nerd-icons-install-fonts.
 
 #+end_src
 
-* Auto complete
+
+
+
+** Dashboard
+
+#+begin_src emacs-lisp
+;; dashboard
+(straight-use-package 'dashboard)
+(require 'dashboard)
+(dashboard-setup-startup-hook)
+(setq dashboard-startup-banner 'logo)
+(setq dashboard-set-heading-icons t)
+(setq dashboard-set-file-icons t)
+(setq dashboard-set-navigator t)
+
+#+end_src
+
+
+** Zoom
+#+begin_src emacs-lisp
+(use-package zoom
+  :straight t          ; install via straight.el
+  :custom
+  (zoom-size '(0.618 . 0.618)) ; width × height ratios
+  :config
+  (zoom-mode 1))
+
+#+end_src
+
+
+
+
+
+
+
+
+
+
+* Navigation
+
+** Recent files
+
+#+begin_src emacs-lisp
+;; Recent files
+(recentf-mode 1)
+(setq recentf-max-saved-items 50)
+(global-set-key (kbd "C-x C-r") 'counsel-recentf)
+
+#+end_src
+
+
+** Which-key
+
+To give an overview of shortcut options
+
+#+begin_src emacs-lisp
+;; which-key
+(use-package which-key
+  :straight t
+  :config
+  (which-key-mode 1))
+
+#+end_src
+
+
+
+** Recent commands
+
+#+begin_src emacs-lisp
+;; amx - command frequency tracking for M-x
+(use-package amx
+  :straight t
+  :config
+  (amx-mode 1))
+
+#+end_src
+
+
+
+** Search
+
+With swiper
+
+#+begin_src emacs-lisp
+;; search
+(global-set-key (kbd "C-s") #'swiper) ;; C-s
+
+#+end_src
+
+Vimium-style navigation
+
+#+begin_src emacs-lisp
+(use-package avy
+  :straight t
+  :bind
+  (("M-f"   . avy-goto-char-timer) ; type a few chars, jump instantly
+   ("M-g f" . avy-goto-line)       ; jump to line
+   ("M-g w" . avy-goto-word-1)))   ; jump to word
+
+#+end_src
+
+
+
+#+begin_src emacs-lisp
+  (use-package consult
+    :straight t
+    :bind
+    (("C-x b" . consult-buffer)    ; enhanced buffer switcher
+     ("M-y"   . consult-yank-pop)  ; better kill-ring browsing
+     ("C-M-l" . consult-imenu))    ; jump to headings, defs, etc.
+    :hook
+    (completion-list-mode . consult-preview-at-point-mode))
+
+  ;; Embark: context-sensitive actions
+(use-package embark
+  :straight t
+  :bind
+  (("C-." . embark-act)       ; do  
+   ("C-;" . embark-dwim)       ; default
+   ("C-h B" . embark-bindings)) ; available actions for current keymap
+  :init
+  (setq embark-action-indicator
+        (lambda (&rest args)
+          (which-key--show-keymap "Embark" (car args) nil nil 'no-paging)
+          #'which-key--hide-popup-ignore-command)
+        embark-become-indicator embark-action-indicator))
+
+;; Embark-consult: previews & collect buffers for Embark
+(use-package embark-consult
+  :straight t
+  :after (embark consult)
+  :demand t)                    
+
+;; Marginalia: annotations in completion lists
+(use-package marginalia
+  :straight t
+  :init
+  (marginalia-mode 1)
+  :custom
+  (marginalia-annotators
+   '(marginalia-annotators-heavy     
+     marginalia-annotators-light
+     nil)))                          
+
+#+end_src
+
+** Window navigation
+
+#+begin_src emacs-lisp
+(use-package ace-window
+  :straight t
+  :bind
+  (("C-<tab>" . ace-window))          ; displays single-letter hints in each window
+  :custom
+  (aw-scope 'global))             ; work across all frames
+
+#+end_src
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* Editing
+** Auto complete
 
 With ivy, counsel, company, and eglot
 
@@ -147,166 +321,84 @@ With ivy, counsel, company, and eglot
 
 
 (use-package company
-:straight t
-:demand t                     
-:custom
-(company-idle-delay 0.2)      
-(company-minimum-prefix-length 1)
-:hook
-(after-init . global-company-mode))   
+  :straight t
+  :demand t
+  :custom
+  (company-idle-delay 0.2)
+  (company-minimum-prefix-length 1)
+  :hook
+  (after-init . global-company-mode)
+  :config
+  ;; Prevent Company from hijacking “<s TAB” in Org
+  (defun my/company-org-tempo-inhibit (orig-fun command &optional arg &rest others)
+    "Return nil for `company--prefix' when Org’s structure template
+could expand, so TAB goes to `org-tempo'."
+    (if (and (derived-mode-p 'org-mode)
+             (looking-back "^<[a-zA-Z]*" (line-beginning-position)))
+        nil                               ; inhibit Company
+      (apply orig-fun command arg others))) ; otherwise run Company normally
+
+  (advice-add 'company--prefix :around #'my/company-org-tempo-inhibit))
    
 #+end_src
 
-* Recent files
 
 #+begin_src emacs-lisp
-;; Recent files
-(recentf-mode 1)
-(setq recentf-max-saved-items 50)
-(global-set-key (kbd "C-x C-r") 'counsel-recentf)
-
-#+end_src
-
-
-* Search
-
-With swiper
-
-#+begin_src emacs-lisp
-;; search
-(global-set-key (kbd "C-s") #'swiper) ;; C-s
-
-#+end_src
-
-* Which-key
-
-To give an overview of shortcut options
-
-#+begin_src emacs-lisp
-;; which-key
-(use-package which-key
+  ;; completion UI
+(use-package vertico
   :straight t
+  :init
+  (vertico-mode 1)               ; enable globally
+  :custom
+  (vertico-cycle t))             ; wrap around when reaching top/bottom
+
+;; keep minibuffer history across sessions 
+(use-package savehist
+  :straight (:type built-in)     
+  :init
+  (savehist-mode 1))
+
+
+#+end_src
+
+** Evil mode
+General used for SPC leader key
+
+#+begin_src emacs-lisp
+  ;; vim-mode
+  (setq evil-want-keybinding nil)
+  (straight-use-package 'evil)
+  (straight-use-package 'evil-collection)
+
+  (require 'evil)
+  (evil-mode 1)
+
+  (when (require 'evil-collection nil t)
+  (evil-collection-init))
+
+(use-package general
+  :straight t     
+  :demand t
   :config
-  (which-key-mode 1))
+  (general-create-definer leader-def
+    :prefix "SPC"
+    :states '(normal visual)))
 
+  (straight-use-package 'evil-org-mode)
+  (when (require 'evil-org-mode nil t)
+  (add-hook 'org-mode-hook 'evil-org-mode))
+
+
+(straight-use-package 'evil-org-mode)
+(when (require 'evil-org-mode nil t)
+  (add-hook 'org-mode-hook 'evil-org-mode))
+
+  
 #+end_src
 
-* Golden-Ratio
+TODO: expand evil mode configuration
 
-Auto-enlarging the current buffer
-This one is installed from local directory
-I got the files from Github
-
-#+begin_src emacs-lisp
-;; golden-ratio
-(use-package golden-ratio
-  :straight (:local-repo "~/.emacs.d/lisp/golden-ratio")
-  :config (golden-ratio-mode 1))
-
-#+end_src
-
-* Magit
-
-Emacs Git client + diff highlights
-
-#+begin_src emacs-lisp
-;; magit
-(use-package magit
-  :straight t
-  :bind ("C-x g" . magit-status)
-  :config
-  (setq magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
-
-;; git-gutter
-(straight-use-package 'git-gutter)
-(global-git-gutter-mode +1)
-
-#+end_src
-
-* Vterm
-
-Terminal emulator in emacs
-
-#+begin_src emacs-lisp
-  ;; vterm
-  (require 'vterm)
-#+end_src
-
-* HTML, CSS
-#+begin_src emacs-lisp
-;; web-mode
-(use-package web-mode
-  :mode ("\\.html?\\'" "\\.css\\'" "\\.js\\'" "\\.jsx\\'" "\\.tsx\\'" "\\.vue\\'")
-  :config
-  (setq web-mode-markup-indent-offset 2)
-  (setq web-mode-css-indent-offset 2)
-  (setq web-mode-code-indent-offset 2))
-
-#+end_src
-
-* Quarto + languages
-
-#+begin_src emacs-lisp
-  ;; quarto-mode
-  (use-package quarto-mode
-    :ensure t)
-
-  ;; poly-mode
-  (straight-use-package 'polymode)
- 
-  ;; markdown
-  (use-package markdown-mode
-    :mode ("\\.md\\'" "\\.markdown\\'")
-    :config
-    (setq markdown-command "pandoc"))
-
-  ;; yaml
-  (use-package yaml-mode
-    :mode ("\\.yml\\'" "\\.yaml\\'"))
-
-  ;; R
-  (use-package ess
-    :defer t
-    :config
-    (setq ess-style 'RStudio)
-    (setq ess-offset-continued 'straight)
-    (setq ess-expression-offset 0))
-
-  ;; julia
-  (use-package julia-mode
-    :mode "\\.jl\\'")
-
-#+end_src
-
-
-** Setting up company to work with Quarto
-
-#+begin_src emacs-lisp
-(defun my/pm-enable-company ()
-    "Turn on company in sub-buffers produced by Polymode."
-    (company-mode 1))
-
-(with-eval-after-load 'polymode
-    (add-hook 'poly-after-switch-buffer-hook #'my/pm-enable-company))
-
-(with-eval-after-load 'company
-    (add-to-list 'company-backends 'company-ess-backend))
-
-#+end_src
-
-** Using my own code (better-quarto.el)
-
-#+begin_src emacs-lisp
-
-(use-package better-quarto
-  :straight nil          ;; local file, don’t fetch from MELPA
-  :load-path "~/.emacs.d/elisp/better-quarto"
-  :after general)
-#+end_src
-
-
-
-* Syntax checking
+** Syntax checking
 
 with flycheck and tree-sitter
 
@@ -348,7 +440,8 @@ with flycheck and tree-sitter
 #+end_src
 
 
-* To-Do comment highlighting
+
+** To-Do comment highlighting
 
 #+begin_src emacs-lisp
 ;; hl-todo
@@ -357,22 +450,82 @@ with flycheck and tree-sitter
 
 #+end_src
 
-
-* Dashboard
+** Replace
 
 #+begin_src emacs-lisp
-;; dashboard
-(straight-use-package 'dashboard)
-(require 'dashboard)
-(dashboard-setup-startup-hook)
-(setq dashboard-startup-banner 'logo)
-(setq dashboard-set-heading-icons t)
-(setq dashboard-set-file-icons t)
-(setq dashboard-set-navigator t)
+(use-package anzu
+  :straight t
+  :init (global-anzu-mode 1)
+  :bind
+  (("M-%"   . anzu-query-replace)        ; replaces default query-replace
+   ("C-M-%" . anzu-query-replace-regexp)))
 
 #+end_src
 
-* Nix
+
+* Languages
+** HTML, CSS, JS
+#+begin_src emacs-lisp
+;; web-mode
+(use-package web-mode
+  :mode ("\\.html?\\'" "\\.css\\'" "\\.js\\'" "\\.jsx\\'" "\\.tsx\\'" "\\.vue\\'")
+  :config
+  (setq web-mode-markup-indent-offset 2)
+  (setq web-mode-css-indent-offset 2)
+  (setq web-mode-code-indent-offset 2))
+
+#+end_src
+
+
+** Quarto + languages
+
+#+begin_src emacs-lisp
+
+  ;; test version of quarto-mode TODO:
+  (use-package quarto-mode
+    :straight (:local-repo "~/code/emacs/quarto-emacs"))
+
+    ;; poly-mode
+    (straight-use-package 'polymode)
+
+    ;; markdown
+    (use-package markdown-mode
+      :mode ("\\.md\\'" "\\.markdown\\'")
+      :config
+      (setq markdown-command "pandoc"))
+
+    ;; yaml
+    (use-package yaml-mode
+      :mode ("\\.yml\\'" "\\.yaml\\'"))
+
+    ;; R
+    (use-package ess
+      :defer t
+      :config
+      (setq ess-style 'RStudio)
+      (setq ess-offset-continued 'straight)
+      (setq ess-expression-offset 0))
+
+    ;; julia
+    (use-package julia-mode
+      :mode "\\.jl\\'")
+
+#+end_src
+
+
+*** Using my own code (better-quarto.el)
+
+#+begin_src emacs-lisp
+
+(use-package better-quarto
+  :straight nil          
+  :load-path "~/.emacs.d/elisp/better-quarto"
+  :after general)
+#+end_src
+
+
+
+** Nix
 
 #+begin_src emacs-lisp 
 ;; nix
@@ -381,137 +534,140 @@ with flycheck and tree-sitter
 
 #+end_src
 
-* Recent commands
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+* Applications
+
+** Magit
+
+Emacs Git client + diff highlights
 
 #+begin_src emacs-lisp
-;; amx - command frequency tracking for M-x
-(use-package amx
+;; magit
+(use-package magit
   :straight t
+  :bind ("C-x g" . magit-status)
   :config
-  (amx-mode 1))
+  (setq magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+
+;; git-gutter
+(straight-use-package 'git-gutter)
+(global-git-gutter-mode +1)
 
 #+end_src
 
 
-* Centering text for readability
+** Vterm
+
+Terminal emulator in emacs
 
 #+begin_src emacs-lisp
-;; Center text in the buffer
-(use-package visual-fill-column
+  ;; vterm
+  (require 'vterm)
+#+end_src
+
+
+** Org
+#+begin_src emacs-lisp
+  (use-package org
+    :defer t
+    :init
+    ;; files that feed the agenda
+    (setq org-agenda-files '("~/org/inbox.org"
+                             "~/org/projects.org"
+                             "~/org/calendar.org"))
+
+    ;; custom TODO workflow
+    (setq org-todo-keywords
+          '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
+            (sequence "WAIT(w)" "|" "CANCELLED(c)")))
+    ;; show deadlines 7 days ahead
+    (setq org-deadline-warning-days 7)
+
+    ;; diary integration for Calendar -> appears in agenda
+    (setq org-agenda-include-diary t)  ; diary entries from `M-x calendar`
+    :bind (("C-c a" . org-agenda)      ; quick agenda
+           ("C-c c" . org-capture)))
+
+  (setq diary-file "~/org/diary")
+
+
+(require 'org-tempo)
+
+(use-package org-auto-tangle
   :straight t
-  :ensure t
-  :hook (visual-line-mode . visual-fill-column-mode)
+  :hook (org-mode . org-auto-tangle-mode)   
   :custom
-  (visual-fill-column-width 80)
-  (visual-fill-column-center-text t))
+  (org-auto-tangle-default t)) 
+
+  (use-package corg
+  :straight (corg :host github :repo "isamert/corg.el") 
+  :hook (org-mode . corg-mode)
+  :custom
+  (corg-header-minimum-chars 1)) ; complete after “<s” etc.
+
 
 #+end_src
 
 
-* Evil mode
-General used for SPC leader key
+
+
+
+** Elfeed
 
 #+begin_src emacs-lisp
-    ;; vim-mode
-    (straight-use-package 'evil)
-    (straight-use-package 'evil-collection)
+  (use-package elfeed
+    :straight t)
 
-    (require 'evil)
-    (evil-mode 1)
+  (use-package elfeed-tube
+    :straight t
+    :after elfeed
+    :demand t
+    :config
+    (elfeed-tube-setup))
 
-    (straight-use-package 'evil-collection)
-    (when (require 'evil-collection nil t)
-      (evil-collection-init))
+  (load-file (expand-file-name "feeds.el" (expand-file-name "rss" user-emacs-directory)))
 
-(use-package general
-  :straight t     
-  :demand t)      
+  (setq elfeed-show-entry-switch #'elfeed-display-buffer)
+
+  (defun elfeed-display-buffer (buf &optional act)
+    (pop-to-buffer buf)
+    (set-window-text-height (get-buffer-window) (round (* 0.7 (frame-height)))))
+
+  (setq elfeed-search-filter "@1-week-ago +unread")
+
+  (setq elfeed-search-parse-filter-expiry-words t)
 
 
+  (defun my-elfeed-show-setup ()
+    (setq-local elfeed-show-entry-switch #'elfeed-display-buffer))
+
+  (add-hook 'elfeed-show-mode-hook #'my-elfeed-show-setup)
+   
 #+end_src
 
 
 
-* Projectile
+* TODO
 
-#+begin_src emacs-lisp
-(use-package projectile
-  :straight t
-  :config
-  (projectile-mode +1))
-
-#+end_src
-
-* Keybindings
-
-#+begin_src emacs-lisp
-  (global-set-key (kbd "C-<tab>") 'other-window)
-
-#+end_src
-
-* Org
-#+begin_src emacs-lisp
-  (require 'ob-R)
-
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((shell . t)
-     (python . t)
-     (R . t)
-     (julia . t)
-     (emacs-lisp . t)))
-
-  (require 'org-tempo)
-  (setq org-confirm-babel-evaluate nil)
-
-  (setq org-babel-default-header-args:python
-        '((:results . "output")))
-
-  (setq org-babel-default-header-args:R
-        '((:results . "output")))
-
-  (setq org-babel-default-header-args:julia
-        '((:results . "output")))
-
-  (setq org-babel-default-header-args:shell
-        '((:results . "output")))
-  
-  (straight-use-package 'org-auto-tangle)
-
-#+end_src
-
-* Elfeed
-
-#+begin_src emacs-lisp
-(use-package elfeed
-  :straight t)
-
-(use-package elfeed-tube
-  :straight t
-  :after elfeed
-  :demand t
-  :config
-  (elfeed-tube-setup))
-
-(load-file (expand-file-name "feeds.el" user-emacs-directory))
-
-(setq elfeed-show-entry-switch #'elfeed-display-buffer)
-
-(defun elfeed-display-buffer (buf &optional act)
-  (pop-to-buffer buf)
-  (set-window-text-height (get-buffer-window) (round (* 0.7 (frame-height)))))
-
-(setq elfeed-search-filter "@1-month-ago +unread")
-
-(setq elfeed-search-parse-filter-expiry-words t)
-
-(defun my-elfeed-show-setup ()
-  (setq-local elfeed-show-entry-switch #'elfeed-display-buffer))
-
-(add-hook 'elfeed-show-mode-hook #'my-elfeed-show-setup)
- 
-#+end_src
-
+- eshell?
 
 
 
