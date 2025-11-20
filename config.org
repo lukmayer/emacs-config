@@ -8,36 +8,33 @@
 For automating package installation
 
 #+begin_src emacs-lisp
-;; Bootstrap straight.el
-(defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 6))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
-         'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
+  ;; Bootstrap straight.el
+  (defvar bootstrap-version)
+  (let ((bootstrap-file
+         (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+        (bootstrap-version 6))
+    (unless (file-exists-p bootstrap-file)
+      (with-current-buffer
+          (url-retrieve-synchronously
+           "https://raw.githubusercontent.com/radian-software/straight.el/develop/install.el"
+           'silent 'inhibit-cookies)
+        (goto-char (point-max))
+        (eval-print-last-sexp)))
+    (load bootstrap-file nil 'nomessage))
 
-;; Configure use-package to use straight.el by default
-(straight-use-package 'use-package)
-(setq straight-use-package-by-default t)
-
+  ;; Configure use-package to use straight.el by default
+  (straight-use-package 'use-package)
+  (setq straight-use-package-by-default t)
 #+end_src
 
-
 ** Basics
-Alerts, font, toolbar, bell, line numbers
+Alerts, toolbar, bell, line numbers
 
 #+begin_src emacs-lisp
+  (global-font-lock-mode 1)
+
   ;; Suppress native compilation warnings
   (setq native-comp-async-report-warnings-errors nil)
-
-  ;; font
-  (set-face-attribute 'default nil :height 110)
 
   ;; basic settings
   (setq inhibit-startup-message t)
@@ -49,60 +46,118 @@ Alerts, font, toolbar, bell, line numbers
   ;; lines
   (setq display-line-numbers-type t)
   (global-display-line-numbers-mode 1)
-  (global-hl-line-mode 1)
+  ;; (global-hl-line-mode 1)
 
   ;; short answer
-  (setq use-short-answer t)
+  (setq use-short-answers t)
 
   ;; attempting to make dashboard the default buffer instead of scratch
   (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*")))
 
+  ;; insert \n with C-n
+  (setq next-line-add-newlines t)
+
+  ;; overwrite selection when pasting
+  (delete-selection-mode 1)
+#+end_src
+** Auto-save
+This sets auto-save/back-up files to a specific directory rather than littering them everywhere
+#+begin_src emacs-lisp
+
+(make-directory "~/.emacs.d/auto-save-list/" t)
+(make-directory "~/.emacs.d/backups/"       t)
+
+(setq auto-save-file-name-transforms
+      `((".*" ,(expand-file-name "auto-save-list/" user-emacs-directory) t))
+      backup-directory-alist
+      `((".*" . ,(expand-file-name "backups/" user-emacs-directory))))
 
 #+end_src
+** God mode
+make emacs a bit more modal
+#+begin_src emacs-lisp
+  (use-package god-mode
+    :straight t
+    :init
+    (setq god-mode-enable-function-key-translation nil)
+    :bind (("<escape>" . god-local-mode)
+           :map god-local-mode-map
+           ("i" . god-local-mode))
+    :config
+    (god-mode-all))
 
+  ;; making the cursor change with god mode status
+  (defun my-god-mode-update-cursor ()
+    (setq cursor-type (if god-local-mode 'box 'bar)))
+
+  (add-hook 'god-mode-enabled-hook 'my-god-mode-update-cursor)
+  (add-hook 'god-mode-disabled-hook 'my-god-mode-update-cursor)
+
+#+end_src
 
 * Appearance
 ** Theme
 
 #+begin_src emacs-lisp
-;; theme
-(use-package doom-themes
+  ;; theme
+  (setq modus-themes-to-toggle '(modus-operandi-tritanopia modus-vivendi-tritanopia))
+
+  (setq modus-themes-bold-constructs t)
+  (setq modus-themes-italic-constructs t)
+  (setq modus-themes-syntax '(alt-syntax))
+
+  (setq modus-themes-fringes 'subtle)
+
+  (setq modus-themes-common-palette-overrides
+        '((border-mode-line-active unspecified)
+          (border-mode-line-inactive unspecified)
+  	  (bg-mode-line-active bg-active)))
+
+  (setq modus-themes-headings
+        '((1 . (rainbow overline background 1.4))
+          (2 . (rainbow background 1.3))
+          (3 . (rainbow bold 1.2))
+          (t . (semilight 1.1))))
+
+  (setq modus-themes-scale-headings t)
+
+  (load-theme 'modus-vivendi-tritanopia t)
+
+#+end_src
+
+
+** Font
+
+#+begin_src emacs-lisp
+
+  ;; font
+  (set-face-attribute
+   'default nil
+   :family "Iosevka Extended"
+   :height 120)
+
+  ;; ligatures
+  (use-package ligature
     :straight t
     :config
-    (load-theme 'doom-henna t))
-
-(add-hook 'after-init-hook
-            (lambda ()
-              (load-theme 'doom-henna t)))
-
-   ;; Trusted themes
-(custom-set-variables
-   '(custom-safe-themes
-     '("9b9d7a851a8e26f294e778e02c8df25c8a3b15170e6f9fd6965ac5f2544ef2a9"
-       "22a0d47fe2e6159e2f15449fcb90bbf2fe1940b185ff143995cc604ead1ea171"
-       "b754d3a03c34cfba9ad7991380d26984ebd0761925773530e24d8dd8b6894738"
-       "4d5d11bfef87416d85673947e3ca3d3d5d985ad57b02a7bb2e32beaf785a100e"
-       "7771c8496c10162220af0ca7b7e61459cb42d18c35ce272a63461c0fc1336015"
-       "77fff78cc13a2ff41ad0a8ba2f09e8efd3c7e16be20725606c095f9a19c24d3d"
-       "f64189544da6f16bab285747d04a92bd57c7e7813d8c24c30f382f087d460a33"
-       default)))
-  (custom-set-faces
-)
+    ;; Enable all Iosevka ligatures 
+    (ligature-set-ligatures t
+        			  '("<--" "<---" "<->" "<-->" "<--->" "<---->"
+        			    "<==" "<===" "<=>" "<==>" "<===>" "<====>"
+        			    "<~~" "<~" "~>" "~~>"
+        			    "::" ":::" "==" "!=" "===" "!=="
+        			    ":=" ":-" ":+" "<*" "<*>" "*>"
+        			    "<|" "<|>" "|>" "+:" "-:" "=:" "<******>"
+        			    "++" "+++"))
+    (global-ligature-mode t))
 
 
-(defun light-theme ()
-  "Load light theme."
-  (interactive)
-  (when (car custom-enabled-themes)
-    (disable-theme (car custom-enabled-themes)))
-  (load-theme 'doom-bluloco-light t))
+#+end_src
 
-(defun dark-theme ()
-  "Load dark theme."
-  (interactive)
-  (when (car custom-enabled-themes)
-    (disable-theme (car custom-enabled-themes)))
-  (load-theme 'doom-henna t))
+*** Rainbow-mode
+
+#+begin_src emacs-lisp
+  (straight-use-package 'rainbow-mode)
 
 #+end_src
 
@@ -111,56 +166,85 @@ Alerts, font, toolbar, bell, line numbers
 For the icons you have to run nerd-icons-install-fonts.
 
 #+begin_src emacs-lisp
-;; modeline
-(use-package doom-modeline
-  :straight t
-  :config
-  (doom-modeline-mode 1))
+    ;; modeline
+    (setq doom-modeline-support-imenu t)
+    (setq doom-modeline-height 25)
+    (setq doom-modeline-bar-width 1)
+    (setq doom-modeline-hud t)
+    (setq doom-modeline-icon t)
+    (setq doom-modeline-major-mode-icon t)
+    (setq doom-modeline-majornnn-mode-color-icon t)
+    (setq doom-modeline-buffer-state-icon t)
+    (setq doom-modeline-buffer-modification-icon t)
+    (setq doom-modeline-lsp-icon t)
+    (setq doom-modeline-buffer-name t)
+    (setq doom-modeline-highlight-modified-buffer-name t)
+    (setq doom-modeline-column-zero-based t)
+    (setq doom-modeline-percent-position '(-3 "%p"))
+    (setq doom-modeline-position-line-format '("L%l"))
+    (setq doom-modeline-position-column-format '("C%c"))
+    (setq doom-modeline-position-column-line-format '("%l:%c"))
+    (setq doom-modeline-enable-word-count t)
+    (setq doom-modeline-total-line-number t)
+
+    (use-package doom-modeline
+      :straight t
+      :config
+      (doom-modeline-mode 1))
+
+  (display-time-mode 1)
+  (setq display-time-day-and-date t)
+  (setq display-time-default-load-average nil)
 
 #+end_src
-
 
 
 
 ** Dashboard
 
 #+begin_src emacs-lisp
-;; dashboard
-(straight-use-package 'dashboard)
-(require 'dashboard)
-(dashboard-setup-startup-hook)
-(setq dashboard-startup-banner 'logo)
-(setq dashboard-set-heading-icons t)
-(setq dashboard-set-file-icons t)
-(setq dashboard-set-navigator t)
+  ;; dashboard
+  (straight-use-package 'dashboard)
+  (require 'dashboard)
+  (dashboard-setup-startup-hook)
+  (setq dashboard-set-heading-icons t)
+  (setq dashboard-set-file-icons t)
+  (setq dashboard-set-navigator t)
+  (setq dashboard-vertically-center-content t)
+  (setq dashboard-display-icons-p t)     
+  (setq dashboard-icon-type 'nerd-icons)
+  (setq dashboard-set-heading-icons t)
+  (setq dashboard-set-file-icons t)
+  (add-to-list 'dashboard-items '(agenda) t)
+  (setq dashboard-week-agenda t)
+
+  (setq dashboard-startupify-list '(dashboard-insert-navigator
+                                    dashboard-insert-newline
+                                    dashboard-insert-items))
+
+  (setq dashboard-items '((recents   . 10)
+  			(bookmarks . 10)
+  			(agenda    . 20)))
 
 #+end_src
-
 
 ** Zoom
 #+begin_src emacs-lisp
-(use-package zoom
-  :straight t          ; install via straight.el
-  :custom
-  (zoom-size '(0.618 . 0.618)) ; width × height ratios
-  :config
-  (zoom-mode 1))
+  (use-package zoom
+    :straight t          
+    :config
+    (custom-set-variables
+     '(zoom-size '(0.7 . 0.7)))
+    (zoom-mode 1))
 
 #+end_src
 
-
-
-
-
-
-
-
-
-
 * Navigation
-
+** Custom-keybindings
+#+begin_src emacs-lisp
+(global-set-key (kbd "C-q") 'other-window)
+#+end_src
 ** Recent files
-
 #+begin_src emacs-lisp
 ;; Recent files
 (recentf-mode 1)
@@ -168,10 +252,7 @@ For the icons you have to run nerd-icons-install-fonts.
 (global-set-key (kbd "C-x C-r") 'counsel-recentf)
 
 #+end_src
-
-
 ** Which-key
-
 To give an overview of shortcut options
 
 #+begin_src emacs-lisp
@@ -182,9 +263,6 @@ To give an overview of shortcut options
   (which-key-mode 1))
 
 #+end_src
-
-
-
 ** Recent commands
 
 #+begin_src emacs-lisp
@@ -195,251 +273,118 @@ To give an overview of shortcut options
   (amx-mode 1))
 
 #+end_src
-
-
-
 ** Search
-
-With swiper
+*** Swiper
 
 #+begin_src emacs-lisp
 ;; search
-(global-set-key (kbd "C-s") #'swiper) ;; C-s
+(global-set-key (kbd "C-s") #'swiper) 
+
+#+end_src
+*** Orderless
+Basically fuzzy match when searching for files
+#+begin_src emacs-lisp
+  (use-package orderless
+    :straight t
+    :config
+    (setq completion-styles '(orderless)
+  	orderless-matching-styles '(orderless-flex)
+    	read-buffer-completion-ignore-case t))
 
 #+end_src
 
-Vimium-style navigation
+*** Avy (Vimium-style navigation)
 
 #+begin_src emacs-lisp
-(use-package avy
-  :straight t
-  :bind
-  (("M-f"   . avy-goto-char-timer) ; type a few chars, jump instantly
-   ("M-g f" . avy-goto-line)       ; jump to line
-   ("M-g w" . avy-goto-word-1)))   ; jump to word
-
-#+end_src
-
-
-
-#+begin_src emacs-lisp
-  (use-package consult
+  (use-package avy
     :straight t
     :bind
-    (("C-x b" . consult-buffer)    ; enhanced buffer switcher
-     ("M-y"   . consult-yank-pop)  ; better kill-ring browsing
-     ("C-M-l" . consult-imenu))    ; jump to headings, defs, etc.
-    :hook
-    (completion-list-mode . consult-preview-at-point-mode))
-
-  ;; Embark: context-sensitive actions
-(use-package embark
-  :straight t
-  :bind
-  (("C-." . embark-act)       ; do  
-   ("C-;" . embark-dwim)       ; default
-   ("C-h B" . embark-bindings)) ; available actions for current keymap
-  :init
-  (setq embark-action-indicator
-        (lambda (&rest args)
-          (which-key--show-keymap "Embark" (car args) nil nil 'no-paging)
-          #'which-key--hide-popup-ignore-command)
-        embark-become-indicator embark-action-indicator))
-
-;; Embark-consult: previews & collect buffers for Embark
-(use-package embark-consult
-  :straight t
-  :after (embark consult)
-  :demand t)                    
-
-;; Marginalia: annotations in completion lists
-(use-package marginalia
-  :straight t
-  :init
-  (marginalia-mode 1)
-  :custom
-  (marginalia-annotators
-   '(marginalia-annotators-heavy     
-     marginalia-annotators-light
-     nil)))                          
+    (("C-."   . avy-goto-char-timer))) 
 
 #+end_src
 
-** Window navigation
-
+** Context: Marginalia
 #+begin_src emacs-lisp
-(use-package ace-window
-  :straight t
-  :bind
-  (("C-<tab>" . ace-window))          ; displays single-letter hints in each window
-  :custom
-  (aw-scope 'global))             ; work across all frames
+  ;; Marginalia: annotations in completion lists
+  (use-package marginalia
+    :straight t
+    :init
+    (marginalia-mode))
 
 #+end_src
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 * Editing
 ** Auto complete
-
-With ivy, counsel, company, and eglot
+ 
+*** Ivy, Counsel
 
 #+begin_src emacs-lisp
-;; auto-complete
-(use-package ivy
-    :straight t
-    :config
-    (ivy-mode 1))
+  (use-package ivy
+      :straight t
+      :config
+      (ivy-mode 1))
 
-(use-package counsel
-    :straight t
-    :after ivy
-    :config
-    (require 'counsel)
-    (counsel-mode 1)
-    (setq ivy-use-virtual-buffers t)
-    (setq ivy-initial-inputs-alist nil)) ;; Remove ^ from M-x
+  (setq ivy-re-builders-alist
+      '((swiper . ivy--regex-plus)
+        (t      . ivy--regex-fuzzy)))
+  
+  (use-package counsel
+      :straight t
+      :after ivy
+      :config
+      (require 'counsel)
+      (counsel-mode 1)
+      (setq ivy-use-virtual-buffers t)
+      (setq ivy-initial-inputs-alist nil)) ;; Remove ^ from M-x
 
-
-;; eglot-booster
-(straight-use-package '(eglot-booster :type git :host github :repo "jdtsmith/eglot-booster"))
-(with-eval-after-load 'eglot
-    (require 'eglot-booster)
-    (eglot-booster-mode))
-
-
-(use-package company
-  :straight t
-  :demand t
-  :custom
-  (company-idle-delay 0.2)
-  (company-minimum-prefix-length 1)
-  :hook
-  (after-init . global-company-mode)
-  :config
-  ;; Prevent Company from hijacking “<s TAB” in Org
-  (defun my/company-org-tempo-inhibit (orig-fun command &optional arg &rest others)
-    "Return nil for `company--prefix' when Org’s structure template
-could expand, so TAB goes to `org-tempo'."
-    (if (and (derived-mode-p 'org-mode)
-             (looking-back "^<[a-zA-Z]*" (line-beginning-position)))
-        nil                               ; inhibit Company
-      (apply orig-fun command arg others))) ; otherwise run Company normally
-
-  (advice-add 'company--prefix :around #'my/company-org-tempo-inhibit))
-   
 #+end_src
 
+*** Company
 
 #+begin_src emacs-lisp
-  ;; completion UI
-(use-package vertico
-  :straight t
-  :init
-  (vertico-mode 1)               ; enable globally
-  :custom
-  (vertico-cycle t))             ; wrap around when reaching top/bottom
+  ;; company
+  (use-package company
+    :straight t
+    :init
+    (global-company-mode)
+    :hook ((emacs-lisp-mode . company-mode))
+    :custom
+    (company-backends '((company-capf company-dabbrev-code)))
+    (company-idle-delay 0.1)
+    (company-minimum-prefix-length 1))
 
+#+end_src
+*** LSP-mode
+
+#+begin_src emacs-lisp
+  ;;lsp mode
+  (use-package lsp-mode
+    :after company
+    :straight t
+    :init
+    (setq lsp-completion-provider :capf) 
+    :hook ((python-mode . lsp-deferred)
+           (ess-r-mode  . lsp-deferred)
+           (julia-mode  . lsp-deferred))
+    :config
+    (lsp-enable-which-key-integration t))
+
+  (use-package lsp-ui
+    :straight t
+    :config
+    (setq lsp-ui-doc-enable t))
+
+
+#+end_src
+
+*** Minibuffer history
+
+#+begin_src emacs-lisp
 ;; keep minibuffer history across sessions 
 (use-package savehist
   :straight (:type built-in)     
   :init
   (savehist-mode 1))
-
-
 #+end_src
-
-** Evil mode
-General used for SPC leader key
-
-#+begin_src emacs-lisp
-  ;; vim-mode
-  (setq evil-want-keybinding nil)
-  (straight-use-package 'evil)
-  (straight-use-package 'evil-collection)
-
-  (require 'evil)
-  (evil-mode 1)
-
-  (when (require 'evil-collection nil t)
-  (evil-collection-init))
-
-(use-package general
-  :straight t     
-  :demand t
-  :config
-  (general-create-definer leader-def
-    :prefix "SPC"
-    :states '(normal visual)))
-
-  (straight-use-package 'evil-org-mode)
-  (when (require 'evil-org-mode nil t)
-  (add-hook 'org-mode-hook 'evil-org-mode))
-
-
-(straight-use-package 'evil-org-mode)
-(when (require 'evil-org-mode nil t)
-  (add-hook 'org-mode-hook 'evil-org-mode))
-
-  
-#+end_src
-
-TODO: expand evil mode configuration
-
-** Syntax checking
-
-with flycheck and tree-sitter
-
-#+begin_src emacs-lisp
-;; flycheck
-(use-package flycheck
-  :init (global-flycheck-mode)
-  :config
-  ;; Disable flycheck in modes where eglot provides diagnostics
-  (setq flycheck-disabled-checkers '(emacs-lisp-checkdoc)))
-
-(use-package treesit
-  :straight (:type built-in)
-  :when (treesit-available-p)
-  :config
-  (setq treesit-language-source-alist
-        '((python "https://github.com/tree-sitter/tree-sitter-python")
-          (javascript "https://github.com/tree-sitter/tree-sitter-javascript")
-          (css "https://github.com/tree-sitter/tree-sitter-css")
-          (html "https://github.com/tree-sitter/tree-sitter-html")
-          (yaml "https://github.com/ikatyang/tree-sitter-yaml")
-          (julia "https://github.com/tree-sitter/tree-sitter-julia")))
-
-  (setq major-mode-remap-alist
-        '((python-mode . python-ts-mode)
-          (js-mode . js-ts-mode)
-          (css-mode . css-ts-mode)
-          (html-mode . html-ts-mode)
-          (yaml-mode . yaml-ts-mode))))
-
-(defun install-treesit-grammars ()
-  "Install tree-sitter grammars for configured languages."
-  (interactive)
-  (dolist (lang '(python javascript css html yaml julia))
-    (unless (treesit-language-available-p lang)
-      (treesit-install-language-grammar lang))))
-
-
-#+end_src
-
-
 
 ** To-Do comment highlighting
 
@@ -450,111 +395,122 @@ with flycheck and tree-sitter
 
 #+end_src
 
-** Replace
+** Undo-tree
 
 #+begin_src emacs-lisp
-(use-package anzu
-  :straight t
-  :init (global-anzu-mode 1)
-  :bind
-  (("M-%"   . anzu-query-replace)        ; replaces default query-replace
-   ("C-M-%" . anzu-query-replace-regexp)))
+  (straight-use-package 'undo-tree)
+  (global-undo-tree-mode)
 
+  (global-set-key (kbd "C-x C-/") 'undo)
+  ;; Bind undo-tree-visualize to a new key, e.g., C-c u
+  (define-key undo-tree-map (kbd "C-c _") 'undo-tree-visualize)
+  
 #+end_src
-
 
 * Languages
-** HTML, CSS, JS
-#+begin_src emacs-lisp
-;; web-mode
-(use-package web-mode
-  :mode ("\\.html?\\'" "\\.css\\'" "\\.js\\'" "\\.jsx\\'" "\\.tsx\\'" "\\.vue\\'")
-  :config
-  (setq web-mode-markup-indent-offset 2)
-  (setq web-mode-css-indent-offset 2)
-  (setq web-mode-code-indent-offset 2))
-
-#+end_src
-
-
-** Quarto + languages
+** Quarto + MD
 
 #+begin_src emacs-lisp
 
-  ;; test version of quarto-mode TODO:
+  ;; modified version of quarto-mode TODO:
   (use-package quarto-mode
     :straight (:local-repo "~/code/emacs/quarto-emacs"))
 
-    ;; poly-mode
-    (straight-use-package 'polymode)
+  ;; markdown
+  (use-package markdown-mode
+    :mode ("\\.md\\'" "\\.markdown\\'")
+    :config
+    (setq markdown-command "pandoc"))
 
-    ;; markdown
-    (use-package markdown-mode
-      :mode ("\\.md\\'" "\\.markdown\\'")
-      :config
-      (setq markdown-command "pandoc"))
 
-    ;; yaml
-    (use-package yaml-mode
-      :mode ("\\.yml\\'" "\\.yaml\\'"))
+  (use-package better-quarto
+    :straight nil          
+    :load-path "~/.emacs.d/elisp/better-quarto")
 
-    ;; R
-    (use-package ess
-      :defer t
-      :config
-      (setq ess-style 'RStudio)
-      (setq ess-offset-continued 'straight)
-      (setq ess-expression-offset 0))
+  (add-hook 'quarto-mode-hook #'better-quarto-mode)
 
-    ;; julia
-    (use-package julia-mode
-      :mode "\\.jl\\'")
+  (add-hook 'markdown-mode-hook
+            (lambda ()
+              (when (and buffer-file-name
+                         (string-match-p "\\.\\(qmd\\|rmd\\)\\'" buffer-file-name))
+                (better-quarto-mode 1))))
 
 #+end_src
 
-
-*** Using my own code (better-quarto.el)
+** Julia + R + Python
 
 #+begin_src emacs-lisp
+  ;; Jupyter
+  (straight-use-package 'jupyter)
 
-(use-package better-quarto
-  :straight nil          
-  :load-path "~/.emacs.d/elisp/better-quarto"
-  :after general)
+  ;; julia
+  (use-package julia-snail
+    :straight t
+    :hook (julia-mode . julia-snail-mode)
+    :init
+    ;; Ask Snail to load its Org-Babel bridge (ob-julia.el)
+    (add-to-list 'julia-snail-extensions 'ob-julia))
+
+
+  (setq julia-snail-propagate-to-indirect-buffers t)
+
+  ;; (use-package julia-mode
+  ;;   :straight t
+  ;;   :mode "\\.jl\\'"
+  ;;   :hook (julia-mode . lsp-deferred))
+
+  ;; (use-package lsp-julia
+  ;;   :straight t
+  ;;   :after lsp-mode)
+
+
+  ;; (add-hook 'julia-mode-hook #'lsp-mode)
+
+  ;; R
+  (use-package ess
+    :straight t
+    :hook (ess-r-mode . (lambda ()
+                          (require 'lsp-mode)
+                          (lsp-deferred))))
+  ;;   :hook (ess-julia-mode . (lambda ()
+  ;;       			    (require 'lsp-julia)
+  ;;       			    (lsp-deferred))))
+
+  ;; python
+  (use-package elpy
+    :straight t
+    :init
+    (elpy-enable)
+    :hook (elpy-mode . lsp-deferred))
+
+  (setq python-shell-interpreter "ipython"
+        python-shell-interpreter-args "-i --simple-prompt")
+
+
+
 #+end_src
-
-
 
 ** Nix
 
 #+begin_src emacs-lisp 
-;; nix
-(use-package nix-mode
-  :mode "\\.nix\\'")
+  ;; nix
+  (use-package nix-mode
+    :straight t
+    :mode "\\.nix\\'")
 
 #+end_src
 
+** English (Spellcheck)
 
+Dump dictionary into emacs.d for simplicity using:
+aspell -d en dump master | aspell -l en expand > ~/.emacs.d/english.words
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#+begin_src emacs-lisp
+  (setq ispell-alternate-dictionary
+        (expand-file-name "~/.emacs.d/english.words"))
+#+end_src
 
 * Applications
-
 ** Magit
 
 Emacs Git client + diff highlights
@@ -573,66 +529,71 @@ Emacs Git client + diff highlights
 
 #+end_src
 
-
-** Vterm
-
-Terminal emulator in emacs
-
-#+begin_src emacs-lisp
-  ;; vterm
-  (require 'vterm)
-#+end_src
-
-
 ** Org
-#+begin_src emacs-lisp
+#+begin_src  emacs-lisp
   (use-package org
-    :defer t
-    :init
-    ;; files that feed the agenda
-    (setq org-agenda-files '("~/org/inbox.org"
-                             "~/org/projects.org"
-                             "~/org/calendar.org"))
+    :straight (:type built-in)
+    :hook (org-babel-after-execute . org-redisplay-inline-images)
+    :custom
+    (org-confirm-babel-evaluate nil)
+    :config
+    (require 'ob-julia)        
+    (add-to-list 'org-babel-load-languages '(julia . t))
+    (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((python . t) (R . t) (julia . t) (shell . t)
+       (css . t) (js . t) (latex . t) (emacs-lisp . t)
+       (jupyter . t)))
+    
+      ;; Settings
+      (setq org-confirm-babel-evaluate nil
+    	org-startup-with-inline-images t
+    	org-babel-eval-verbose t
+    	org-startup-folded 'overview
+    	org-format-latex-options (plist-put org-format-latex-options :scale 1.5)
+    	org-hide-emphasis-markers t))
 
-    ;; custom TODO workflow
-    (setq org-todo-keywords
-          '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d)")
-            (sequence "WAIT(w)" "|" "CANCELLED(c)")))
-    ;; show deadlines 7 days ahead
-    (setq org-deadline-warning-days 7)
+    (require 'org-tempo)
 
-    ;; diary integration for Calendar -> appears in agenda
-    (setq org-agenda-include-diary t)  ; diary entries from `M-x calendar`
-    :bind (("C-c a" . org-agenda)      ; quick agenda
-           ("C-c c" . org-capture)))
+    (use-package org-auto-tangle
+      :straight t
+      :hook (org-mode . org-auto-tangle-mode)   
+      :custom
+      (org-auto-tangle-default t)) 
 
-  (setq diary-file "~/org/diary")
+    (use-package org-bullets ;; make bullets prettier
+      :straight t
+      :config
+      (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
 
-
-(require 'org-tempo)
-
-(use-package org-auto-tangle
-  :straight t
-  :hook (org-mode . org-auto-tangle-mode)   
-  :custom
-  (org-auto-tangle-default t)) 
-
-  (use-package corg
-  :straight (corg :host github :repo "isamert/corg.el") 
-  :hook (org-mode . corg-mode)
-  :custom
-  (corg-header-minimum-chars 1)) ; complete after “<s” etc.
-
+    (use-package corg
+      :straight (:host github :repo "isamert/corg.el")) ;; this adds auto-complete to src block header args
 
 #+end_src
 
+#+begin_src emacs-lisp
+  ;; expense tracking template
+  (defun insert-expense-template ()
+    "Insert expense template with user-specified month and year."
+    (interactive)
+    (let* ((month (read-string "Enter month (e.g., December): "))
+           (year (read-string "Enter year (e.g., 2025): "))
+           (template-file (expand-file-name "~/org/templates/expenses.org"))
+           (content (with-temp-buffer
+                      (insert-file-contents template-file)
+                      (buffer-string))))
+      ;; Replace %B with month, %Y with year
+      (setq content (replace-regexp-in-string "%B" month content))
+      (setq content (replace-regexp-in-string "%Y" year content))
+      (insert content)))
 
 
-
+#+end_src
 
 ** Elfeed
 
 #+begin_src emacs-lisp
+
   (use-package elfeed
     :straight t)
 
@@ -643,31 +604,62 @@ Terminal emulator in emacs
     :config
     (elfeed-tube-setup))
 
-  (load-file (expand-file-name "feeds.el" (expand-file-name "rss" user-emacs-directory)))
+  (use-package elfeed-org
+    :straight t
+    :after elfeed
+    :config
+    (elfeed-org)
+    (setq rmh-elfeed-org-files (list "~/org/elfeed.org")))
 
+  ;; filter condition
+  (setq elfeed-search-filter "@1-week-ago +unread")
+  (setq elfeed-search-parse-filter-expiry-words t)
+
+  ;; cusom display
   (setq elfeed-show-entry-switch #'elfeed-display-buffer)
-
   (defun elfeed-display-buffer (buf &optional act)
     (pop-to-buffer buf)
     (set-window-text-height (get-buffer-window) (round (* 0.7 (frame-height)))))
-
-  (setq elfeed-search-filter "@1-week-ago +unread")
-
-  (setq elfeed-search-parse-filter-expiry-words t)
-
 
   (defun my-elfeed-show-setup ()
     (setq-local elfeed-show-entry-switch #'elfeed-display-buffer))
 
   (add-hook 'elfeed-show-mode-hook #'my-elfeed-show-setup)
-   
+
+
 #+end_src
 
+** Treemacs
 
-
+#+begin_src emacs-lisp
+  (use-package treemacs
+    :straight t
+    :commands treemacs)
+#+end_src
 * TODO
+** Coding
+- yasnippet for org mode header automation
+- ess-view-data, ess-plot
+- styling for org exports?
+- pdf-tools, ox-quarto?
+- org-latex-impatient, org-edit-latex
+- how to make plots show in a buffer?
+  
+** Living in emacs
+- org agenda - org-caldav?
+- how would calendar notifications work? appt
+- email - mu4e or notmuch https://www.liwen.name/articles/use-mbsync-n-mu4e-for-emails-in-emacs
+- org-ref, org-present
+- password manager?
+- LLM in emacs? for autocomplete?
+- default search engine for eww
+- Music player
+- habit tracking
 
-- eshell?
+
+
+
+
 
 
 
