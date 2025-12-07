@@ -25,6 +25,10 @@ For automating package installation
   ;; Configure use-package to use straight.el by default
   (straight-use-package 'use-package)
   (setq straight-use-package-by-default t)
+
+
+  (setq package-enable-at-startup nil) ;; prevent package conflicts
+
 #+end_src
 
 ** Basics
@@ -59,18 +63,31 @@ Alerts, toolbar, bell, line numbers
 
   ;; overwrite selection when pasting
   (delete-selection-mode 1)
+
+  ;; bracket pairs
+  (electric-pair-mode 1)
+  (setq electric-pair-inhibit-predicate ; exclude < from auto-complete
+      (lambda (c)
+        (if (char-equal c ?\<) t (electric-pair-default-inhibit c))))
+
+  ;; line wrap
+  (global-visual-line-mode 1)
+
+
 #+end_src
 ** Auto-save
 This sets auto-save/back-up files to a specific directory rather than littering them everywhere
 #+begin_src emacs-lisp
 
-(make-directory "~/.emacs.d/auto-save-list/" t)
-(make-directory "~/.emacs.d/backups/"       t)
+  (setq auto-save-timeout 5)
 
-(setq auto-save-file-name-transforms
-      `((".*" ,(expand-file-name "auto-save-list/" user-emacs-directory) t))
-      backup-directory-alist
-      `((".*" . ,(expand-file-name "backups/" user-emacs-directory))))
+  (make-directory "~/.emacs.d/auto-save-list/" t)
+  (make-directory "~/.emacs.d/backups/"       t)
+
+  (setq auto-save-file-name-transforms
+        `((".*" ,(expand-file-name "auto-save-list/" user-emacs-directory) t))
+        backup-directory-alist
+        `((".*" . ,(expand-file-name "backups/" user-emacs-directory))))
 
 #+end_src
 ** God mode
@@ -88,10 +105,142 @@ make emacs a bit more modal
 
   ;; making the cursor change with god mode status
   (defun my-god-mode-update-cursor ()
-    (setq cursor-type (if god-local-mode 'box 'bar)))
+    (setq cursor-type (if god-local-mode '(box . size) 'box)))
 
   (add-hook 'god-mode-enabled-hook 'my-god-mode-update-cursor)
   (add-hook 'god-mode-disabled-hook 'my-god-mode-update-cursor)
+
+  ;; useful keybindings
+  (global-set-key (kbd "C-x C-1") #'delete-other-windows)
+  (global-set-key (kbd "C-x C-2") #'split-window-below)
+  (global-set-key (kbd "C-x C-3") #'split-window-right)
+  (global-set-key (kbd "C-x C-0") #'delete-window)
+
+#+end_src
+
+* Org
+#+begin_src  emacs-lisp
+  (use-package org
+    :straight (:type built-in)
+    :hook (org-babel-after-execute . org-redisplay-inline-images)
+    :custom
+    (org-confirm-babel-evaluate nil)
+    :config
+    (require 'ob-julia)        
+    (add-to-list 'org-babel-load-languages '(julia . t))
+    (org-babel-do-load-languages
+     'org-babel-load-languages
+     '((python . t) (R . t) (julia . t) (shell . t)
+       (css . t) (js . t) (latex . t) (emacs-lisp . t)))
+    
+    ;; Settings
+    (setq org-confirm-babel-evaluate nil
+    	org-startup-with-inline-images t
+    	org-babel-eval-verbose t
+    	org-startup-folded 'overview
+    	org-format-latex-options (plist-put org-format-latex-options :scale 1.5)
+    	org-hide-emphasis-markers t))
+
+  (require 'org-tempo)
+
+  (use-package org-auto-tangle
+    :straight t
+    :hook (org-mode . org-auto-tangle-mode)   
+    :custom
+    (org-auto-tangle-default t)) 
+
+  (use-package corg
+    :straight (:host github :repo "isamert/corg.el")) ;; this adds auto-complete to src block header args
+
+  (setq calendar-week-start-day 1)	; setting monday as the first day of the week
+
+#+end_src
+** Org-latex
+#+begin_src emacs-lisp
+  (use-package org-latex-impatient
+    :straight t
+    :defer t
+    :hook (org-mode . org-latex-impatient-mode)
+    :init
+    (setq org-latex-impatient-tex2svg-bin
+  	"/run/current-system/sw/bin/tex2svg"))
+
+#+end_src
+** Templates
+#+begin_src emacs-lisp
+  ;; expense tracking template
+  (defun insert-expense-template ()
+    "Insert expense template with user-specified month and year."
+    (interactive)
+    (let* ((month (read-string "Enter month (e.g., December): "))
+           (year (read-string "Enter year (e.g., 2025): "))
+           (template-file (expand-file-name "~/org/templates/expenses.org"))
+           (content (with-temp-buffer
+                      (insert-file-contents template-file)
+                      (buffer-string))))
+      ;; Replace %B with month, %Y with year
+      (setq content (replace-regexp-in-string "%B" month content))
+      (setq content (replace-regexp-in-string "%Y" year content))
+      (insert content)))
+
+
+#+end_src
+
+** Org-agenda
+#+begin_src emacs-lisp
+
+  (require 'org-habit)
+  (add-to-list 'org-modules 'org-habit)
+
+  (add-hook 'org-after-todo-state-change-hook 'org-save-all-org-buffers)
+  (setq org-habit-graph-column 60)
+  (setq org-agenda-files '("~/org"))
+  (setq org-log-into-drawer t)
+
+  (global-set-key (kbd "C-c a") 'org-agenda)
+
+  (use-package org-alert
+    :straight t
+
+    :custom
+    (alert-default-style 'libnotify) 
+
+    (org-alert-interval 300)             ;; Check every 300 seconds (5 minutes)
+    (org-alert-notify-cutoff 15)         ;; Notify 15 minutes before the event 
+    (org-alert-notify-after-event-cutoff 5) ;; Stop notifying 5 minute after the event starts 
+
+    :config
+    (setq alert-libnotify-priorities
+        '((low . low)
+          (normal . critical) 
+          (high . critical)))
+    (org-alert-enable))
+
+  (setq alert-libnotify-command "/run/current-system/sw/bin/notify-send")
+
+
+#+end_src
+
+** Engrave-faces
+This is meant to add code-block styling for exports
+#+begin_src emacs-lisp
+  (straight-use-package 'engrave-faces)
+  (setq org-latex-src-block-backend 'engraved)
+  (setq org-latex-engraved-theme 'modus-operandi-tritanopia)
+#+end_src
+** Org-modern
+#+begin_src emacs-lisp
+  (straight-use-package 'org-modern)
+  (with-eval-after-load 'org (global-org-modern-mode))
+  (setq
+   org-hide-emphasis-markers t
+   org-pretty-entities t
+   org-agenda-tags-column 0
+   org-ellipsis "…")
+
+  (global-org-modern-mode)
+
+
 
 #+end_src
 
@@ -124,7 +273,6 @@ make emacs a bit more modal
   (load-theme 'modus-vivendi-tritanopia t)
 
 #+end_src
-
 
 ** Font
 
@@ -192,12 +340,8 @@ For the icons you have to run nerd-icons-install-fonts.
       :config
       (doom-modeline-mode 1))
 
-  (display-time-mode 1)
-  (setq display-time-day-and-date t)
-  (setq display-time-default-load-average nil)
 
 #+end_src
-
 
 
 ** Dashboard
@@ -239,10 +383,17 @@ For the icons you have to run nerd-icons-install-fonts.
 
 #+end_src
 
+** Rainbow-delimiters
+#+begin_src emacs-lisp
+  (straight-use-package 'rainbow-delimiters)
+  (add-hook 'prog-mode-hook #'rainbow-delimiters-mode)
+
+#+end_src
+
 * Navigation
 ** Custom-keybindings
 #+begin_src emacs-lisp
-(global-set-key (kbd "C-q") 'other-window)
+(global-set-key (kbd "C-x C-o") 'other-window) ;; this is a bit nicer for god-mode
 #+end_src
 ** Recent files
 #+begin_src emacs-lisp
@@ -446,25 +597,10 @@ Basically fuzzy match when searching for files
   ;; julia
   (use-package julia-snail
     :straight t
-    :hook (julia-mode . julia-snail-mode)
-    :init
-    ;; Ask Snail to load its Org-Babel bridge (ob-julia.el)
-    (add-to-list 'julia-snail-extensions 'ob-julia))
-
+    :hook (julia-mode . julia-snail-mode))
 
   (setq julia-snail-propagate-to-indirect-buffers t)
 
-  ;; (use-package julia-mode
-  ;;   :straight t
-  ;;   :mode "\\.jl\\'"
-  ;;   :hook (julia-mode . lsp-deferred))
-
-  ;; (use-package lsp-julia
-  ;;   :straight t
-  ;;   :after lsp-mode)
-
-
-  ;; (add-hook 'julia-mode-hook #'lsp-mode)
 
   ;; R
   (use-package ess
@@ -472,9 +608,9 @@ Basically fuzzy match when searching for files
     :hook (ess-r-mode . (lambda ()
                           (require 'lsp-mode)
                           (lsp-deferred))))
-  ;;   :hook (ess-julia-mode . (lambda ()
-  ;;       			    (require 'lsp-julia)
-  ;;       			    (lsp-deferred))))
+
+  (setq ess-eval-visibly 'nowait) ;; this should prevent blocking emacs during computation
+
 
   ;; python
   (use-package elpy
@@ -511,6 +647,37 @@ aspell -d en dump master | aspell -l en expand > ~/.emacs.d/english.words
 #+end_src
 
 * Applications
+** Vterm
+Fixing the color scheme for radian by setting a darker vterm background
+#+begin_src emacs-lisp
+
+  (custom-set-faces
+   '(vterm-color-default ((t (:foreground "white" :background "#1e1e1e"))))
+   '(vterm-color-black ((t (:foreground "#000000" :background "#1e1e1e"))))
+   '(vterm-color-red ((t (:foreground "#ff6b6b" :background "#1e1e1e"))))
+   '(vterm-color-green ((t (:foreground "#51cf66" :background "#1e1e1e"))))
+   '(vterm-color-yellow ((t (:foreground "#ffd93d" :background "#1e1e1e"))))
+   '(vterm-color-blue ((t (:foreground "#4ecdc4" :background "#1e1e1e"))))
+   '(vterm-color-magenta ((t (:foreground "#ff6b9d" :background "#1e1e1e"))))
+   '(vterm-color-cyan ((t (:foreground "#a8dadc" :background "#1e1e1e"))))
+   '(vterm-color-white ((t (:foreground "#ffffff" :background "#1e1e1e")))))
+
+
+  (defun vterm--get-color-advice (index &rest args)
+    (cond
+     ((and (>= index 0) (< index 16))
+      (face-foreground (elt vterm-color-palette index) nil 'default))
+     ((= index -11)
+      (face-foreground 'vterm-color-underline nil 'default))
+     ((= index -12)
+      (face-background 'vterm-color-inverse-video nil 'default))
+     (t nil)))
+
+  (advice-add 'vterm--get-color :override #'vterm--get-color-advice)
+
+  (global-set-key (kbd "C-c t") #'vterm)
+  
+#+end_src
 ** Magit
 
 Emacs Git client + diff highlights
@@ -526,67 +693,6 @@ Emacs Git client + diff highlights
 ;; git-gutter
 (straight-use-package 'git-gutter)
 (global-git-gutter-mode +1)
-
-#+end_src
-
-** Org
-#+begin_src  emacs-lisp
-  (use-package org
-    :straight (:type built-in)
-    :hook (org-babel-after-execute . org-redisplay-inline-images)
-    :custom
-    (org-confirm-babel-evaluate nil)
-    :config
-    (require 'ob-julia)        
-    (add-to-list 'org-babel-load-languages '(julia . t))
-    (org-babel-do-load-languages
-     'org-babel-load-languages
-     '((python . t) (R . t) (julia . t) (shell . t)
-       (css . t) (js . t) (latex . t) (emacs-lisp . t)
-       (jupyter . t)))
-    
-      ;; Settings
-      (setq org-confirm-babel-evaluate nil
-    	org-startup-with-inline-images t
-    	org-babel-eval-verbose t
-    	org-startup-folded 'overview
-    	org-format-latex-options (plist-put org-format-latex-options :scale 1.5)
-    	org-hide-emphasis-markers t))
-
-    (require 'org-tempo)
-
-    (use-package org-auto-tangle
-      :straight t
-      :hook (org-mode . org-auto-tangle-mode)   
-      :custom
-      (org-auto-tangle-default t)) 
-
-    (use-package org-bullets ;; make bullets prettier
-      :straight t
-      :config
-      (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
-
-    (use-package corg
-      :straight (:host github :repo "isamert/corg.el")) ;; this adds auto-complete to src block header args
-
-#+end_src
-
-#+begin_src emacs-lisp
-  ;; expense tracking template
-  (defun insert-expense-template ()
-    "Insert expense template with user-specified month and year."
-    (interactive)
-    (let* ((month (read-string "Enter month (e.g., December): "))
-           (year (read-string "Enter year (e.g., 2025): "))
-           (template-file (expand-file-name "~/org/templates/expenses.org"))
-           (content (with-temp-buffer
-                      (insert-file-contents template-file)
-                      (buffer-string))))
-      ;; Replace %B with month, %Y with year
-      (setq content (replace-regexp-in-string "%B" month content))
-      (setq content (replace-regexp-in-string "%Y" year content))
-      (insert content)))
-
 
 #+end_src
 
@@ -625,40 +731,59 @@ Emacs Git client + diff highlights
     (setq-local elfeed-show-entry-switch #'elfeed-display-buffer))
 
   (add-hook 'elfeed-show-mode-hook #'my-elfeed-show-setup)
-
+  (advice-add 'elfeed :after (lambda (&rest _) (elfeed-update)))
 
 #+end_src
 
 ** Treemacs
-
 #+begin_src emacs-lisp
   (use-package treemacs
     :straight t
     :commands treemacs)
 #+end_src
-* TODO
-** Coding
-- yasnippet for org mode header automation
-- ess-view-data, ess-plot
-- styling for org exports?
-- pdf-tools, ox-quarto?
-- org-latex-impatient, org-edit-latex
-- how to make plots show in a buffer?
-  
-** Living in emacs
-- org agenda - org-caldav?
-- how would calendar notifications work? appt
-- email - mu4e or notmuch https://www.liwen.name/articles/use-mbsync-n-mu4e-for-emails-in-emacs
-- org-ref, org-present
-- password manager?
-- LLM in emacs? for autocomplete?
-- default search engine for eww
-- Music player
-- habit tracking
+
+** PDF-tools
+#+begin_src emacs-lisp
+(straight-use-package 'pdf-tools)
+
+#+end_src
+** Mu4e
+
+Set up ~/.offlineimaprc
+
+then run offlineimap
+
+#+begin_src emacs-lisp
+
+  (require 'auth-source)
+  (setq auth-sources '("~/.authinfo")) 
+  (setq epa-pinentry-mode 'loopback)
+  (server-start)
+  (straight-use-package 'pinentry)
+  (pinentry-start)
 
 
+  (add-to-list 'load-path "/run/current-system/sw/share/emacs/site-lisp/mu4e")
+  (load-file "~/.emacs.d/email-contexts.el")
 
+  (setq smtpmail-debug-info t)
+  (setq smtpmail-debug-verbose t)
+  (setq mu4e-get-mail-command "sh -c 'offlineimap -a VivaldiAccount && offlineimap -a UciAccount && mu index'")
+  (setq mu4e-update-interval 600)
+ 
+#+end_src
 
+After config:
+mu init --maildir=~/Mail \
+--my-address=user1@mail.com --my-address=user2@mail.com
+
+mu index
+
+** EWW
+Set default searche engine to SearxNG
+#+begin_src emacs-lisp
+(setq eww-search-prefix "http://127.0.0.1:8888/search?q=")
+#+end_src
 
 
 
