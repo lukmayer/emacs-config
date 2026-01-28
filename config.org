@@ -3,6 +3,7 @@
 #+auto_tangle: t
 
 * Core
+
 ** Straight.el
 
 For automating package installation
@@ -35,46 +36,52 @@ For automating package installation
 Alerts, toolbar, bell, line numbers
 
 #+begin_src emacs-lisp
-  (global-font-lock-mode 1)
+(global-font-lock-mode 1)
 
-  ;; Suppress native compilation warnings
-  (setq native-comp-async-report-warnings-errors nil)
+;; Suppress native compilation warnings
+(setq native-comp-async-report-warnings-errors nil)
 
-  ;; basic settings
-  (setq inhibit-startup-message t)
-  (tool-bar-mode -1)
-  (menu-bar-mode -1)
-  (scroll-bar-mode -1)
-  (setq visible-bell t)
+;; basic settings
+(setq inhibit-startup-message t)
+(tool-bar-mode -1)
+(menu-bar-mode -1)
+(scroll-bar-mode -1)
+(setq visible-bell t)
+(blink-cursor-mode 0)
 
-  ;; lines
-  (setq display-line-numbers-type t)
-  (global-display-line-numbers-mode 1)
-  ;; (global-hl-line-mode 1)
+;; lines
+(setq display-line-numbers-type t)
+(global-display-line-numbers-mode 1)
+(global-hl-line-mode 1)
 
-  ;; short answer
-  (setq use-short-answers t)
+;; short answer
+(setq use-short-answers t)
 
-  ;; attempting to make dashboard the default buffer instead of scratch
-  (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*")))
+;; attempting to make dashboard the default buffer instead of scratch
+(setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*")))
 
-  ;; insert \n with C-n
-  (setq next-line-add-newlines t)
+;; insert \n with C-n
+(setq next-line-add-newlines t)
 
-  ;; overwrite selection when pasting
-  (delete-selection-mode 1)
+;; overwrite selection when pasting
+(delete-selection-mode 1)
 
-  ;; bracket pairs
-  (electric-pair-mode 1)
-  (setq electric-pair-inhibit-predicate ; exclude < from auto-complete
-      (lambda (c)
-        (if (char-equal c ?\<) t (electric-pair-default-inhibit c))))
+;; bracket pairs
+(electric-pair-mode 1)
+(setq electric-pair-inhibit-predicate ; exclude < from auto-complete
+    (lambda (c)
+      (if (char-equal c ?\<) t (electric-pair-default-inhibit c))))
 
-  ;; line wrap
-  (global-visual-line-mode 1)
+;; line wrap
+(global-visual-line-mode 1)
 
+;; sub words
+(global-subword-mode 1)
 
+;; remember where i left off
+(save-place-mode 1)
 #+end_src
+
 ** Auto-save
 This sets auto-save/back-up files to a specific directory rather than littering them everywhere
 #+begin_src emacs-lisp
@@ -89,7 +96,20 @@ This sets auto-save/back-up files to a specific directory rather than littering 
         backup-directory-alist
         `((".*" . ,(expand-file-name "backups/" user-emacs-directory))))
 
+  (setq backup-by-copying t)
+
 #+end_src
+
+** Tramp
+
+Setting shell to fish
+
+#+begin_src emacs-lisp
+;; (setq tramp-default-remote-shell "/run/current-system/sw/bin/fish")
+(setq explicit-shell-file-name "/run/current-system/sw/bin/fish")
+
+#+end_src
+
 ** God mode
 make emacs a bit more modal
 #+begin_src emacs-lisp
@@ -110,36 +130,40 @@ make emacs a bit more modal
   (add-hook 'god-mode-enabled-hook 'my-god-mode-update-cursor)
   (add-hook 'god-mode-disabled-hook 'my-god-mode-update-cursor)
 
+
   ;; useful keybindings
   (global-set-key (kbd "C-x C-1") #'delete-other-windows)
   (global-set-key (kbd "C-x C-2") #'split-window-below)
   (global-set-key (kbd "C-x C-3") #'split-window-right)
   (global-set-key (kbd "C-x C-0") #'delete-window)
+  (global-set-key (kbd "C-x C-o") 'other-window) 
 
 #+end_src
 
+
 * Org
 #+begin_src  emacs-lisp
+
   (use-package org
     :straight (:type built-in)
     :hook (org-babel-after-execute . org-redisplay-inline-images)
     :custom
     (org-confirm-babel-evaluate nil)
     :config
-    (require 'ob-julia)        
     (add-to-list 'org-babel-load-languages '(julia . t))
     (org-babel-do-load-languages
      'org-babel-load-languages
      '((python . t) (R . t) (julia . t) (shell . t)
        (css . t) (js . t) (latex . t) (emacs-lisp . t)))
-    
+
     ;; Settings
     (setq org-confirm-babel-evaluate nil
-    	org-startup-with-inline-images t
-    	org-babel-eval-verbose t
-    	org-startup-folded 'overview
-    	org-format-latex-options (plist-put org-format-latex-options :scale 1.5)
-    	org-hide-emphasis-markers t))
+      	org-startup-with-inline-images t
+      	org-babel-eval-verbose t
+      	org-startup-folded 'overview
+      	org-format-latex-options (plist-put org-format-latex-options :scale 1.5)
+      	org-hide-emphasis-markers t
+  	org-edit-src-content-indentation 0)) 
 
   (require 'org-tempo)
 
@@ -154,7 +178,15 @@ make emacs a bit more modal
 
   (setq calendar-week-start-day 1)	; setting monday as the first day of the week
 
+  (setq org-cycle-separator-lines 1) ;; space between folded blocks
+  (setq org-insert-heading-respect-content t) ;; headers inserted after content
+
+
 #+end_src
+
+Org-babel note:
+For opening session repl, use C-c C-v z (or M-x org-babel-switch-to-session)
+
 ** Org-latex
 #+begin_src emacs-lisp
   (use-package org-latex-impatient
@@ -166,6 +198,7 @@ make emacs a bit more modal
   	"/run/current-system/sw/bin/tex2svg"))
 
 #+end_src
+
 ** Templates
 #+begin_src emacs-lisp
   ;; expense tracking template
@@ -194,7 +227,8 @@ make emacs a bit more modal
 
   (add-hook 'org-after-todo-state-change-hook 'org-save-all-org-buffers)
   (setq org-habit-graph-column 60)
-  (setq org-agenda-files '("~/org"))
+  (setq org-agenda-files
+        (directory-files-recursively "~/org" "\\.org\\'"))
   (setq org-log-into-drawer t)
 
   (global-set-key (kbd "C-c a") 'org-agenda)
@@ -205,21 +239,34 @@ make emacs a bit more modal
     :custom
     (alert-default-style 'libnotify) 
 
-    (org-alert-interval 300)             ;; Check every 300 seconds (5 minutes)
+    (org-alert-interval 300)             ;; Delay for repeating a reminder
     (org-alert-notify-cutoff 15)         ;; Notify 15 minutes before the event 
     (org-alert-notify-after-event-cutoff 5) ;; Stop notifying 5 minute after the event starts 
 
     :config
     (setq alert-libnotify-priorities
-        '((low . low)
-          (normal . critical) 
-          (high . critical)))
+          '((low . low)
+            (normal . critical) 
+            (high . critical)))
     (org-alert-enable))
 
   (setq alert-libnotify-command "/run/current-system/sw/bin/notify-send")
 
+  ;; inbox
+  (setq org-capture-templates
+        '(("t" "Inbox Task" entry (file "inbox.org")
+           "* TODO %?\n  %i")))
+
+  ;; archive
+  (setq org-archive-location "completed.org::")
+
+  ;; capture
+  (global-set-key (kbd "C-c c") 'org-capture)
 
 #+end_src
+
+Test notifications like this:
+(alert "Test message" :title "Test Alert")   
 
 ** Engrave-faces
 This is meant to add code-block styling for exports
@@ -243,8 +290,46 @@ This is meant to add code-block styling for exports
 
 
 #+end_src
+** Org-caldav
+#+begin_src emacs-lisp
+  (use-package org-caldav
+    :straight t
+    :config
+    (setq org-caldav-url "https://calendar.vivaldi.net/calendars/willuk@vivaldi.net"
+          org-caldav-calendar-id "default"
+          org-caldav-inbox "~/org/calendar.org"
+          org-caldav-files nil
+  	org-caldav-days-in-past 365
+          org-icalendar-timezone "America/Los_Angeles"))
+
+#+end_src
+
+** Org-journal
+#+begin_src emacs-lisp
+  (use-package org-journal
+    :straight t
+    :defer t
+    :init
+    (setq org-journal-dir "~/org/journal/"
+  	org-journal-file-type 'daily
+  	org-journal-file-format "%Y%m%d.org")
+    (setq org-journal-date-format "%A, %d/%m/%Y")
+    :bind (("C-c j j" . org-journal-new-entry)))
+
+
+#+end_src
+
+** literate-calc
+
+start line with = and then run e.g. literate-calc-eval-line
+
+#+begin_src emacs-lisp
+  (straight-use-package 'literate-calc-mode)
+  
+#+end_src
 
 * Appearance
+
 ** Theme
 
 #+begin_src emacs-lisp
@@ -272,41 +357,34 @@ This is meant to add code-block styling for exports
 
   (load-theme 'modus-vivendi-tritanopia t)
 
+
 #+end_src
 
 ** Font
 
 #+begin_src emacs-lisp
 
-  ;; font
+  ;;  Font
   (set-face-attribute
    'default nil
-   :family "Iosevka Extended"
+   :family "Miracode" 
    :height 120)
-
-  ;; ligatures
-  (use-package ligature
-    :straight t
-    :config
-    ;; Enable all Iosevka ligatures 
-    (ligature-set-ligatures t
-        			  '("<--" "<---" "<->" "<-->" "<--->" "<---->"
-        			    "<==" "<===" "<=>" "<==>" "<===>" "<====>"
-        			    "<~~" "<~" "~>" "~~>"
-        			    "::" ":::" "==" "!=" "===" "!=="
-        			    ":=" ":-" ":+" "<*" "<*>" "*>"
-        			    "<|" "<|>" "|>" "+:" "-:" "=:" "<******>"
-        			    "++" "+++"))
-    (global-ligature-mode t))
 
 
 #+end_src
 
-*** Rainbow-mode
+*** Colorful-mode
 
 #+begin_src emacs-lisp
-  (straight-use-package 'rainbow-mode)
-
+  (use-package colorful-mode
+    :straight t
+    :custom
+    (colorful-use-prefix t)
+    (colorful-only-strings 'only-prog)
+    (css-fontify-colors nil)
+    :config
+    (global-colorful-mode t)
+    (add-to-list 'global-colorful-modes 'helpful-mode))
 #+end_src
 
 ** Doom Modeline
@@ -366,9 +444,14 @@ For the icons you have to run nerd-icons-install-fonts.
                                     dashboard-insert-newline
                                     dashboard-insert-items))
 
+  (setq dashboard-agenda-sort-strategy '(time-up))
+
+
   (setq dashboard-items '((recents   . 10)
-  			(bookmarks . 10)
-  			(agenda    . 20)))
+    			(bookmarks . 10)
+    			(agenda    . 20)))
+
+  (add-hook 'server-after-make-frame-hook (lambda () (dashboard-refresh-buffer)))
 
 #+end_src
 
@@ -390,11 +473,17 @@ For the icons you have to run nerd-icons-install-fonts.
 
 #+end_src
 
-* Navigation
-** Custom-keybindings
+** Indent-guides
+
 #+begin_src emacs-lisp
-(global-set-key (kbd "C-x C-o") 'other-window) ;; this is a bit nicer for god-mode
+  (straight-use-package 'highlight-indent-guides)
+  (setq highlight-indent-guides-method 'character)
+  (add-hook 'prog-mode-hook 'highlight-indent-guides-mode)
+
 #+end_src
+
+* Navigation
+
 ** Recent files
 #+begin_src emacs-lisp
 ;; Recent files
@@ -403,6 +492,7 @@ For the icons you have to run nerd-icons-install-fonts.
 (global-set-key (kbd "C-x C-r") 'counsel-recentf)
 
 #+end_src
+
 ** Which-key
 To give an overview of shortcut options
 
@@ -414,6 +504,7 @@ To give an overview of shortcut options
   (which-key-mode 1))
 
 #+end_src
+
 ** Recent commands
 
 #+begin_src emacs-lisp
@@ -424,6 +515,7 @@ To give an overview of shortcut options
   (amx-mode 1))
 
 #+end_src
+
 ** Search
 *** Swiper
 
@@ -450,7 +542,9 @@ Basically fuzzy match when searching for files
   (use-package avy
     :straight t
     :bind
-    (("C-."   . avy-goto-char-timer))) 
+    (("C-."   . avy-goto-char-timer)
+     ("C-c l" . avy-goto-line)
+     ("C-c w" . avy-goto-word-0)))
 
 #+end_src
 
@@ -463,7 +557,70 @@ Basically fuzzy match when searching for files
     (marginalia-mode))
 
 #+end_src
+
+** Window navigation
+#+begin_src emacs-lisp
+  (straight-use-package 'winum)
+  (winum-mode)
+  (setq winum-mode-line t)
+  (global-set-key (kbd "M-1") 'winum-select-window-1)
+  (global-set-key (kbd "M-2") 'winum-select-window-2)
+  (global-set-key (kbd "M-3") 'winum-select-window-3)
+  (global-set-key (kbd "M-4") 'winum-select-window-4)
+  (global-set-key (kbd "M-5") 'winum-select-window-5)
+
+#+end_src
+
+** Buffer moving
+
+#+begin_src emacs-lisp
+  (straight-use-package 'buffer-move)
+
+  (global-set-key (kbd "<C-M-up>")    #'buf-move-up)
+  (global-set-key (kbd "<C-M-down>")  #'buf-move-down)
+  (global-set-key (kbd "<C-M-left>")  #'buf-move-left)
+  (global-set-key (kbd "<C-M-right>") #'buf-move-right)
+
+#+end_src
+
+
 * Editing
+
+** Deleting
+#+begin_src emacs-lisp
+;;; 1. Smart Backward Delete (C-Backspace)
+(defun my/smart-backward-kill ()
+  "If there is more than 1 character of whitespace, delete only the whitespace.
+Otherwise (0 or 1 space), kill the word (eating the space and the word)."
+  (interactive)
+  ;; Check how much whitespace is behind us without moving the cursor yet
+  (if (> (save-excursion (abs (skip-chars-backward " \t\n"))) 1)
+      ;; Case: Multiple spaces (e.g. indentation or double space) -> Delete whitespace only
+      (let ((p (point)))
+        (skip-chars-backward " \t\n")
+        (delete-region (point) p))
+    ;; Case: 0 or 1 space -> Run standard greedy kill (eats space + word)
+    (backward-kill-word 1)))
+
+;;; 2. Smart Forward Delete (C-Delete)
+(defun my/smart-forward-kill ()
+  "If there is more than 1 character of whitespace, delete only the whitespace.
+Otherwise (0 or 1 space), kill the word (eating the space and the word)."
+  (interactive)
+  ;; Check how much whitespace is ahead
+  (if (> (save-excursion (skip-chars-forward " \t\n")) 1)
+      ;; Case: Multiple spaces -> Delete whitespace only
+      (let ((p (point)))
+        (skip-chars-forward " \t\n")
+        (delete-region p (point)))
+    ;; Case: 0 or 1 space -> Run standard greedy kill
+    (kill-word 1)))
+
+(global-set-key (kbd "C-<backspace>") 'my/smart-backward-kill)
+(global-set-key (kbd "C-<delete>")    'my/smart-forward-kill)
+
+#+end_src
+
 ** Auto complete
  
 *** Ivy, Counsel
@@ -504,6 +661,7 @@ Basically fuzzy match when searching for files
     (company-minimum-prefix-length 1))
 
 #+end_src
+
 *** LSP-mode
 
 #+begin_src emacs-lisp
@@ -537,6 +695,40 @@ Basically fuzzy match when searching for files
   (savehist-mode 1))
 #+end_src
 
+*** Embark
+
+#+begin_src emacs-lisp
+  (use-package embark
+    :ensure t
+
+    :bind
+    (("C-," . embark-act)         ;; pick some comfortable binding
+     ("C-;" . embark-dwim)        ;; good alternative: M-.
+     ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
+
+    :init
+
+    ;; Optionally replace the key help with a completing-read interface
+    (setq prefix-help-command #'embark-prefix-help-command)
+
+    :config
+
+    ;; Hide the mode line of the Embark live/completions buffers
+    (add-to-list 'display-buffer-alist
+                 '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+  		 nil
+  		 (window-parameters (mode-line-format . none)))))
+
+#+end_src
+
+** Annotations
+
+#+begin_src emacs-lisp
+  (straight-use-package 'annotate)
+
+#+end_src
+
+
 ** To-Do comment highlighting
 
 #+begin_src emacs-lisp
@@ -553,12 +745,33 @@ Basically fuzzy match when searching for files
   (global-undo-tree-mode)
 
   (global-set-key (kbd "C-x C-/") 'undo)
-  ;; Bind undo-tree-visualize to a new key, e.g., C-c u
   (define-key undo-tree-map (kbd "C-c _") 'undo-tree-visualize)
   
 #+end_src
 
+** Aggressive-indent
+
+#+begin_src emacs-lisp
+    (straight-use-package 'aggressive-indent-mode)
+    (global-aggressive-indent-mode 1)
+
+#+end_src
+
+
+
+** Yasnippet
+
+#+begin_src emacs-lisp
+  (use-package yasnippet
+    :straight t
+    :config
+    (setq yas-snippet-dirs '("~/.emacs.d/snippets"))
+    (yas-global-mode 1))
+
+#+end_src
+
 * Languages
+
 ** Quarto + MD
 
 #+begin_src emacs-lisp
@@ -591,36 +804,82 @@ Basically fuzzy match when searching for files
 ** Julia + R + Python
 
 #+begin_src emacs-lisp
-  ;; Jupyter
-  (straight-use-package 'jupyter)
 
-  ;; julia
-  (use-package julia-snail
-    :straight t
-    :hook (julia-mode . julia-snail-mode))
-
-  (setq julia-snail-propagate-to-indirect-buffers t)
+;; julia
+(straight-use-package 'julia-mode)
 
 
-  ;; R
-  (use-package ess
-    :straight t
-    :hook (ess-r-mode . (lambda ()
-                          (require 'lsp-mode)
-                          (lsp-deferred))))
-
-  (setq ess-eval-visibly 'nowait) ;; this should prevent blocking emacs during computation
+;;  R
+(use-package ess
+  :straight t
+  :hook ((ess-r-mode . (lambda () (require 'lsp-mode) (lsp-deferred)))
+          (ess-julia-mode . (lambda () (require 'lsp-mode) (lsp-deferred)))))
 
 
-  ;; python
-  (use-package elpy
-    :straight t
-    :init
-    (elpy-enable)
-    :hook (elpy-mode . lsp-deferred))
+;; julia patch (fixes parsing error when using :session)
+(defconst org-babel-julia-write-object-command 
+  "begin local p_ans = %s; local p_tmp_file = \"%s\"; try using CSV, DataFrames; p_ans_df = typeof(p_ans) <: DataFrame ? p_ans : DataFrame(:ans => p_ans); CSV.write(p_tmp_file, p_ans_df, writeheader = %s, transform = (col, val) -> something(val, missing), missingstring = \"nil\", quotestrings = false); p_ans catch e; err_msg = \"Source block evaluation failed. $e\"; CSV.write(p_tmp_file, DataFrame(:ans => err_msg), writeheader = false, transform = (col, val) -> something(val, missing), missingstring = \"nil\", quotestrings = false); err_msg end end")
 
-  (setq python-shell-interpreter "ipython"
-        python-shell-interpreter-args "-i --simple-prompt")
+;; julia patch (fixes multi-line expressions being evaluated line by line)
+(defun org-babel-julia-evaluate-session
+    (session body result-type result-params column-names-p)
+  "Evaluate BODY in SESSION.
+If RESULT-TYPE equals `output' then return standard output as a
+string.  If RESULT-TYPE equals `value' then return the value of the
+last statement in BODY, as elisp."
+  (cl-case result-type
+    (value
+     (with-temp-buffer
+       (insert (org-babel-chomp body))
+       (let ((ess-local-customize-alist t)
+             (ess-local-process-name
+              (process-name (get-buffer-process session)))
+             (ess-eval-visibly-p nil))
+         (ess-eval-buffer nil)))
+     (let ((tmp-file (org-babel-temp-file "julia-")))
+       (org-babel-comint-eval-invisibly-and-wait-for-file
+        session tmp-file
+        (format org-babel-julia-write-object-command
+                "ans"
+                (org-babel-process-file-name tmp-file 'noquote)
+                (if column-names-p "true" "false")
+                ))
+       (org-babel-julia-process-value-result
+        (org-babel-result-cond result-params
+          (with-temp-buffer
+            (insert-file-contents tmp-file)
+            (buffer-string))
+          (org-babel-import-elisp-from-file tmp-file '(4)))
+        column-names-p)))
+    (output
+     (let ((tmp-src-file (org-babel-temp-file "julia-src-"))
+           (tmp-out-file (org-babel-temp-file "julia-out-")))
+       ;; 1. Write the code body to a temp file
+       (with-temp-file tmp-src-file (insert body))
+       
+       ;; 2. Send command to redirect stdout to a file, then run the code
+       (org-babel-comint-with-output (session org-babel-julia-eoe-output)
+         (insert (format "open(\"%s\", \"w\") do f; redirect_stdout(f) do; include(\"%s\"); end; end; print(\"%s\")"
+                         (org-babel-process-file-name tmp-out-file 'noquote)
+                         (org-babel-process-file-name tmp-src-file 'noquote)
+                         org-babel-julia-eoe-output))
+         (inferior-ess-send-input))
+       
+       ;; 3. Read the output from the file (robust against buffer display issues)
+       (with-temp-buffer
+         (insert-file-contents tmp-out-file)
+         (buffer-string))))))
+
+
+;; python
+(use-package elpy
+  :straight t
+  :init
+  (elpy-enable)
+  :hook (elpy-mode . lsp-deferred))
+
+(setq python-shell-interpreter "ipython"
+      python-shell-interpreter-args "-i --simple-prompt")
 
 
 
@@ -646,38 +905,58 @@ aspell -d en dump master | aspell -l en expand > ~/.emacs.d/english.words
         (expand-file-name "~/.emacs.d/english.words"))
 #+end_src
 
+* Programming
+
+** Dumb-jump (definitions)
+
+#+begin_src emacs-lisp
+(straight-use-package 'dumb-jump)
+
+#+end_src
+
 * Applications
+
 ** Vterm
 Fixing the color scheme for radian by setting a darker vterm background
+
 #+begin_src emacs-lisp
 
-  (custom-set-faces
-   '(vterm-color-default ((t (:foreground "white" :background "#1e1e1e"))))
-   '(vterm-color-black ((t (:foreground "#000000" :background "#1e1e1e"))))
-   '(vterm-color-red ((t (:foreground "#ff6b6b" :background "#1e1e1e"))))
-   '(vterm-color-green ((t (:foreground "#51cf66" :background "#1e1e1e"))))
-   '(vterm-color-yellow ((t (:foreground "#ffd93d" :background "#1e1e1e"))))
-   '(vterm-color-blue ((t (:foreground "#4ecdc4" :background "#1e1e1e"))))
-   '(vterm-color-magenta ((t (:foreground "#ff6b9d" :background "#1e1e1e"))))
-   '(vterm-color-cyan ((t (:foreground "#a8dadc" :background "#1e1e1e"))))
-   '(vterm-color-white ((t (:foreground "#ffffff" :background "#1e1e1e")))))
+(use-package vterm
+  :config
+  ;; Force vterm to use Fish globally 
+  (setq vterm-shell "/run/current-system/sw/bin/fish")
+  (setq vterm-tramp-shells '(("sudo" "/run/current-system/sw/bin/fish"))))
+
+(custom-set-faces
+ '(vterm-color-default ((t (:foreground "white" :background "#1e1e1e"))))
+ '(vterm-color-black ((t (:foreground "#000000" :background "#1e1e1e"))))
+ '(vterm-color-red ((t (:foreground "#ff6b6b" :background "#1e1e1e"))))
+ '(vterm-color-green ((t (:foreground "#51cf66" :background "#1e1e1e"))))
+ '(vterm-color-yellow ((t (:foreground "#ffd93d" :background "#1e1e1e"))))
+ '(vterm-color-blue ((t (:foreground "#4ecdc4" :background "#1e1e1e"))))
+ '(vterm-color-magenta ((t (:foreground "#ff6b9d" :background "#1e1e1e"))))
+ '(vterm-color-cyan ((t (:foreground "#a8dadc" :background "#1e1e1e"))))
+ '(vterm-color-white ((t (:foreground "#ffffff" :background "#1e1e1e")))))
 
 
-  (defun vterm--get-color-advice (index &rest args)
-    (cond
-     ((and (>= index 0) (< index 16))
-      (face-foreground (elt vterm-color-palette index) nil 'default))
-     ((= index -11)
-      (face-foreground 'vterm-color-underline nil 'default))
-     ((= index -12)
-      (face-background 'vterm-color-inverse-video nil 'default))
-     (t nil)))
+(defun vterm--get-color-advice (index &rest args)
+  (cond
+   ((and (>= index 0) (< index 16))
+    (face-foreground (elt vterm-color-palette index) nil 'default))
+   ((= index -11)
+    (face-foreground 'vterm-color-underline nil 'default))
+   ((= index -12)
+    (face-background 'vterm-color-inverse-video nil 'default))
+   (t nil)))
 
-  (advice-add 'vterm--get-color :override #'vterm--get-color-advice)
+(advice-add 'vterm--get-color :override #'vterm--get-color-advice)
 
-  (global-set-key (kbd "C-c t") #'vterm)
-  
+(global-set-key (kbd "C-c t") #'vterm)
+
+
+
 #+end_src
+
 ** Magit
 
 Emacs Git client + diff highlights
@@ -721,7 +1000,7 @@ Emacs Git client + diff highlights
   (setq elfeed-search-filter "@1-week-ago +unread")
   (setq elfeed-search-parse-filter-expiry-words t)
 
-  ;; cusom display
+  ;; custom display
   (setq elfeed-show-entry-switch #'elfeed-display-buffer)
   (defun elfeed-display-buffer (buf &optional act)
     (pop-to-buffer buf)
@@ -732,6 +1011,7 @@ Emacs Git client + diff highlights
 
   (add-hook 'elfeed-show-mode-hook #'my-elfeed-show-setup)
   (advice-add 'elfeed :after (lambda (&rest _) (elfeed-update)))
+
 
 #+end_src
 
@@ -747,6 +1027,7 @@ Emacs Git client + diff highlights
 (straight-use-package 'pdf-tools)
 
 #+end_src
+
 ** Mu4e
 
 Set up ~/.offlineimaprc
@@ -755,22 +1036,39 @@ then run offlineimap
 
 #+begin_src emacs-lisp
 
-  (require 'auth-source)
-  (setq auth-sources '("~/.authinfo")) 
-  (setq epa-pinentry-mode 'loopback)
-  (server-start)
-  (straight-use-package 'pinentry)
-  (pinentry-start)
+(require 'auth-source)
+(setq auth-sources '("~/.authinfo")) 
+(straight-use-package 'pinentry)
+(setq epg-pinentry-mode 'loopback)
+
+(require 'server)
+(unless (server-running-p)
+  (server-start))
 
 
-  (add-to-list 'load-path "/run/current-system/sw/share/emacs/site-lisp/mu4e")
-  (load-file "~/.emacs.d/email-contexts.el")
+(add-to-list 'load-path "/run/current-system/sw/share/emacs/site-lisp/mu4e")
+(load-file "~/.emacs.d/email-contexts.el")
 
-  (setq smtpmail-debug-info t)
-  (setq smtpmail-debug-verbose t)
-  (setq mu4e-get-mail-command "sh -c 'offlineimap -a VivaldiAccount && offlineimap -a UciAccount && mu index'")
-  (setq mu4e-update-interval 600)
- 
+(setq smtpmail-debug-info t)
+(setq smtpmail-debug-verbose t)
+(setq mu4e-get-mail-command "sh -c 'offlineimap -a VivaldiAccount && offlineimap -a UciAccount && mu index'")
+(setq mu4e-update-interval 600)
+(setq mu4e-split-view 'vertical)
+
+(setq message-cite-reply-position 'above)
+
+(setq mu4e-bookmarks
+    '((:name "Unread messages"
+       :query "flag:unread AND NOT flag:trashed AND NOT maildir:\"/UciAccount/[Gmail].All Mail\""
+       :key ?u)
+      (:name "Today's messages"
+       :query "date:today..now"
+       :key ?t)
+      (:name "Last 7 days"
+       :query "date:7d..now"
+       :key ?w)))
+
+
 #+end_src
 
 After config:
@@ -779,21 +1077,283 @@ mu init --maildir=~/Mail \
 
 mu index
 
-** EWW
-Set default searche engine to SearxNG
+*** Org-msg
+
 #+begin_src emacs-lisp
-(setq eww-search-prefix "http://127.0.0.1:8888/search?q=")
+  (use-package org-msg
+  :straight t
+  :after mu4e
+  :config
+  (setq mail-user-agent 'mu4e-user-agent)
+  (require 'org-msg)
+  (setq org-msg-options "html-postamble:nil H:5 num:nil ^:{} toc:nil author:nil email:nil \\n:t"
+      org-msg-startup "hidestars indent inlineimages"
+      org-msg-default-alternatives '((new		. (text html))
+                                     (reply-to-html	. (text html))
+                                     (reply-to-text	. (text)))
+      org-msg-convert-citation t)
+  (org-msg-mode))
+
+#+end_src
+
+*** Starred email
+
+#+begin_src emacs-lisp
+
+(add-to-list 'org-capture-templates
+             '("e" "Email to Starred" entry (file "~/org/starred.org")
+               "* TODO %a \n%?"
+               :immediate-finish nil))
+
+;; 1. The wrapper function that stores the link and opens the capture window
+(defun my/mu4e-capture-email ()
+  "Capture the current email using the 'e' org-capture template."
+  (interactive)
+  (call-interactively 'org-store-link) ;; Grab the email link
+  (org-capture nil "e"))               ;; Launch the "e" template
+
+;; 2. Bind the function to C-c s
+(with-eval-after-load 'mu4e
+  (define-key mu4e-view-mode-map (kbd "C-c s") 'my/mu4e-capture-email)
+  (define-key mu4e-headers-mode-map (kbd "C-c s") 'my/mu4e-capture-email))
+
+#+end_src
+
+Capture template for emails
+
+*** Email to calendar
+
+#+begin_src emacs-lisp
+(add-to-list 'org-capture-templates
+             '("c" "Email to Calendar" entry (file "~/org/calendar.org")
+               "\n* %^{Meeting Title}\n\nSCHEDULED: %^T\n%a\n%?"
+               :immediate-finish nil))
+#+end_src
+
+** EMMS
+
+#+begin_src emacs-lisp
+(use-package emms
+  :ensure nil
+  :bind ("<f12>" . emms)
+  :config
+  (emms-all)
+  
+  (require 'emms-player-mpv)
+  (setq emms-player-mpv-executable "/run/current-system/sw/bin/mpv")
+  (add-to-list 'emms-player-list 'emms-player-mpv)
+  (setq emms-player-mpv-environment '("LC_ALL=C"))
+  
+  (setq emms-playing-time-display-p nil)
+  
+  (defun my-emms-icon-indicator ()
+    "Return a simple musical note, or a pause symbol if paused."
+    (if emms-player-paused-p
+        " ♫ *Pause*"  ; Symbol when paused
+      " ♫ *Play*"))   ; Symbol when playing
+      
+  (setq emms-mode-line-mode-line-function #'my-emms-icon-indicator)
+  (setq emms-mode-line-format " %s")
+  
+  (emms-mode-line 1)
+
+  (add-hook 'emms-player-paused-hook #'emms-mode-line-alter)
+  
+  ;; --- SPEED CONTROL FUNCTIONS ---
+  (defun my/emms-mpv-show-speed ()
+    "Query MPV for current speed and display it in the minibuffer."
+    (emms-player-mpv-cmd '(get_property "speed")
+             (lambda (speed error)
+                           (message "Current Speed: %sx" speed))))
+
+  (defun my/emms-speed-up ()
+    "Increase MPV playback speed by 0.1."
+    (interactive)
+    (emms-player-mpv-cmd '(add speed 0.1))
+    (my/emms-mpv-show-speed))
+
+  (defun my/emms-speed-down ()
+    "Decrease MPV playback speed by 0.1."
+    (interactive)
+    (emms-player-mpv-cmd '(add speed -0.1))
+    (my/emms-mpv-show-speed))
+
+  (defun my/emms-speed-reset ()
+    "Reset MPV playback speed to 1x."
+    (interactive)
+    (emms-player-mpv-cmd '(set_property "speed" 1))
+    (my/emms-mpv-show-speed))
+
+  (defun my/emms-speed-preferred ()
+    "Set MPV playback speed to 1.8x."
+    (interactive)
+    (emms-player-mpv-cmd '(set_property "speed" 1.8))
+    (my/emms-mpv-show-speed))
+
+  (defun my/emms-playlist-mode-config ()
+    (local-set-key (kbd "M-<f12>") #'emms-browser)
+    (local-set-key (kbd "A") #'emms-add-directory)
+    (local-set-key (kbd "T") #'emms-add-directory-tree)
+    (local-set-key (kbd "F") #'emms-add-file)
+    (local-set-key (kbd "U") #'emms-add-url)
+    (local-set-key (kbd "L") #'emms-toggle-repeat-track)
+    (local-set-key (kbd "SPC") #'emms-pause)
+    ;; Speed controls
+    (local-set-key (kbd ">") #'my/emms-speed-up)
+    (local-set-key (kbd "<") #'my/emms-speed-down)
+    (local-set-key (kbd "=") #'my/emms-speed-reset)
+    (local-set-key (kbd "G") #'my/emms-speed-preferred))
+
+  (add-hook 'emms-playlist-mode-hook #'my/emms-playlist-mode-config))
+
 #+end_src
 
 
 
 
+*** More EMMS
+
+#+begin_src emacs-lisp
+
+;; https://www.bardman.dev/technology/elfeed
+(defun bard/add-video-emms-queue ()
+  "Add YouTube video from Elfeed entry to EMMS queue."
+  (interactive)
+  (require 'emms-playlist-mode)
+  (let ((entry (elfeed-search-selected :single)))
+    (if entry
+        (let ((url (elfeed-entry-link entry)))
+          (if (and url (string-match-p "https?://\\(www\\.\\)?youtube\\.com\\|youtu\\.be" url))
+              (let* ((playlist-name "Watch Later")
+                     (playlist-buffer (get-buffer (format " *%s*" playlist-name))))
+                (unless playlist-buffer
+                  (setq playlist-buffer (emms-playlist-new (format " *%s*" playlist-name))))
+                (emms-playlist-set-playlist-buffer playlist-buffer)
+                (emms-add-url url)
+                (elfeed-search-untag-all-unread)
+                (message "Added to EMMS: %s" url))
+            (message "Not a YouTube link: %s" url)))
+      (message "No entry selected."))))
 
 
+(with-eval-after-load 'elfeed
+  (define-key elfeed-search-mode-map (kbd "C-c C-e") #'bard/add-video-emms-queue))
 
 
+#+end_src
 
 
+** EWW
 
+#+begin_src emacs-lisp
+  (setq browse-url-browser-function 'eww-browse-url) ;; use eww by default
+  (setq eww-suggest-uris nil) ;; disable search history suggestions
+  (setq eww-prompt-history nil) ;; wipe search history
+  (setq eww-search-prefix "http://127.0.0.1:8888/search?q=") ;; SearxNG
+  (setq eww-auto-rename-buffer 'title) ;; page title in buffer name
 
+  (straight-use-package 'centaur-tabs)
+  (centaur-tabs-mode 1)
+
+  (setq centaur-tabs-buffer-list-function
+        (lambda ()
+          (seq-filter (lambda (buffer)
+                        (with-current-buffer buffer
+                          (eq major-mode 'eww-mode)))
+                      (buffer-list))))
+
+  (with-eval-after-load 'centaur-tabs
+    (global-set-key (kbd "C-c .") #'centaur-tabs-ace-jump))
+
+  (defun my/eww-new-buffer ()
+    "Open EWW in a new buffer by simulating the prefix argument."
+    (interactive)
+    ;; '(4) corresponds to C-u -> use a new buffer
+    (let ((current-prefix-arg '(4)))
+      (call-interactively 'eww)))
+
+  (global-set-key (kbd "C-c e") 'my/eww-new-buffer)
+
+  ;; making sure M-Ret works
+  (with-eval-after-load 'eww
+    (setq eww-suggest-uris
+    	'(eww-links-at-point url-get-url-at-point eww-current-url)))
+
+  (use-package ace-link
+    :straight t
+    :init
+    (with-eval-after-load 'eww
+      (define-key eww-mode-map (kbd "f") 'ace-link-eww)))
+
+  (defun eww-redirects (url)
+    "Rewrite URLs to use JS-free frontends."
+    (cond
+     ;; Reddit -> old.reddit.com
+     ((string-match-p "reddit\\.com" url)
+      (replace-regexp-in-string "https?://\\(www\\.\\)?reddit\\.com" "https://old.reddit.com" url))
+
+     ;; return original URL if no match found
+     (t url)))
+
+  (add-to-list 'eww-url-transformers 'eww-redirects)
+
+#+end_src
+
+** gptel
+Current system prompt:
+
+The primary goal is to tap into your vast knowledge to help the user find relevant resources.
+Should the user ask about technical problems in layman terms, demonstrate how their request could be rephrased in technical language.
+Should the user ask how to solve a certain problem, suggest potential avenues and accompanying search queries.
+Responses exclusively consist of resource suggestions, straight to the point reasons for these suggestions, and finish with relevant search queries for further research. Do not provide links.
+Always respond in a machine-style, never in a human style. 
+
+#+begin_src emacs-lisp
+(straight-use-package 'gptel)
+(setq gptel-model 'gemma3:4b
+      gptel-backend (gptel-make-ollama "Ollama"
+				       :host "localhost:11434"
+				       :stream t
+				       :models '(gemma3:4b)))
+(setq gptel-directives
+      '((default . "The primary goal is to tap into your vast knowledge to help the user find relevant resources.
+Should the user ask about technical problems in layman terms, demonstrate how their request could be rephrased in technical language.
+Should the user ask how to solve a certain problem, suggest potential avenues and accompanying search queries.
+Responses exclusively consist of resource suggestions, straight to the point reasons for these suggestions, and finish with relevant search queries for further research. Do not provide links.
+Always respond in a machine-style, never in a human style.")))
+
+(add-hook 'gptel-post-stream-hook 'gptel-auto-scroll)
+(add-hook 'gptel-post-response-functions 'gptel-end-of-response)
+(setq gptel-highlight-mode 'face)
+(setq gptel-max-tokens 4096)
+(setq gptel-temperature 2)
+#+end_src
+
+** e-books
+
+#+begin_src emacs-lisp
+
+(use-package nov
+  :straight t
+  :config
+  (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode)))
+
+(straight-use-package 'visual-fill-column)
+
+(defun my-nov-setup ()
+  "Setup specifically for reading .epub novels."
+ 
+  (face-remap-add-relative 'variable-pitch :family "ET Book" :height 140)
+
+  (display-line-numbers-mode -1)
+  
+  (variable-pitch-mode 1)
+  
+  (visual-fill-column-mode 1)
+  (setq-local visual-fill-column-center-text t)
+  (setq-local visual-fill-column-width 82)) ; Adjust width to comfort
+  
+(add-hook 'nov-mode-hook 'my-nov-setup)
+
+#+end_src
 
